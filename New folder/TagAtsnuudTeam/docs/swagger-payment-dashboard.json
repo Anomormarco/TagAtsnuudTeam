@@ -1,0 +1,338 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Hall Booking Payment and Dashboard API",
+    "version": "1.0.0",
+    "description": "Payment creation, Stripe checkout, Stripe webhook, commission, owner payout, and dashboard endpoints."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Payments"
+    },
+    {
+      "name": "Owner Payouts"
+    },
+    {
+      "name": "Dashboard"
+    }
+  ],
+  "paths": {
+    "/api/v1/payments": {
+      "get": {
+        "tags": ["Payments"],
+        "summary": "Payment history for admin",
+        "responses": {
+          "200": {
+            "description": "Payment list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Payment"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Payments"],
+        "summary": "Create payment skeleton",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payments/my": {
+      "get": {
+        "tags": ["Payments"],
+        "summary": "Payment history for user",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User payment list"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/owner": {
+      "get": {
+        "tags": ["Payments"],
+        "summary": "Payment history for owner",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner payment list"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/checkout-session": {
+      "post": {
+        "tags": ["Payments"],
+        "summary": "Create Stripe Checkout session",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stripe Checkout URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "checkoutUrl": {
+                      "type": "string"
+                    },
+                    "sessionId": {
+                      "type": "string"
+                    },
+                    "payment": {
+                      "$ref": "#/components/schemas/Payment"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payments/stripe/webhook": {
+      "post": {
+        "tags": ["Payments"],
+        "summary": "Stripe webhook",
+        "description": "Handles checkout.session.completed, checkout.session.expired, and checkout.session.async_payment_failed. Use raw application/json body.",
+        "responses": {
+          "200": {
+            "description": "Webhook received"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/commission-report": {
+      "get": {
+        "tags": ["Payments"],
+        "summary": "Commission report",
+        "responses": {
+          "200": {
+            "description": "Commission totals by owner"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/owner-payouts": {
+      "post": {
+        "tags": ["Owner Payouts"],
+        "summary": "Create owner payout",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOwnerPayoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Owner payout created"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/owner-payouts/all": {
+      "get": {
+        "tags": ["Owner Payouts"],
+        "summary": "All owner payouts",
+        "responses": {
+          "200": {
+            "description": "Owner payout list"
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/admin": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Admin dashboard stats",
+        "responses": {
+          "200": {
+            "description": "Admin payment and payout stats"
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/owner/{ownerId}": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Owner dashboard stats",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner payment and payout stats"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreatePaymentRequest": {
+        "type": "object",
+        "required": ["bookingId", "userId", "hallId", "ownerId", "amount"],
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "example": 1
+          },
+          "userId": {
+            "type": "integer",
+            "example": 1
+          },
+          "hallId": {
+            "type": "integer",
+            "example": 1
+          },
+          "ownerId": {
+            "type": "integer",
+            "example": 1
+          },
+          "amount": {
+            "type": "number",
+            "example": 100000
+          },
+          "currency": {
+            "type": "string",
+            "example": "MNT"
+          }
+        }
+      },
+      "CreateOwnerPayoutRequest": {
+        "type": "object",
+        "required": ["ownerId", "amount", "payoutMethod"],
+        "properties": {
+          "ownerId": {
+            "type": "integer",
+            "example": 1
+          },
+          "paymentId": {
+            "type": "integer",
+            "example": 10
+          },
+          "amount": {
+            "type": "number",
+            "example": 90000
+          },
+          "payoutMethod": {
+            "type": "string",
+            "example": "stripe"
+          }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "bookingId": {
+            "type": "integer"
+          },
+          "userId": {
+            "type": "integer"
+          },
+          "hallId": {
+            "type": "integer"
+          },
+          "ownerId": {
+            "type": "integer"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "platformFee": {
+            "type": "number"
+          },
+          "ownerAmount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "transactionId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

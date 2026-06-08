@@ -1,0 +1,18 @@
+const rateLimit = require('express-rate-limit');
+
+// API abuse-аас хамгаалах global rate limit.
+const apiLimiter = rateLimit({
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+  limit: Number(process.env.RATE_LIMIT_MAX || 300),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests, please try again later',
+    errors: null
+  }
+});
+
+module.exports = {
+  apiLimiter
+};

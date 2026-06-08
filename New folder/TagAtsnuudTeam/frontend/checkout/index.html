@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stripe Checkout</title>
+  <link rel="stylesheet" href="/shared/dashboard.css">
+</head>
+<body>
+  <div class="checkout-shell">
+    <aside class="checkout-aside">
+      <p class="brand">Hall Booking</p>
+      <h1>Pay for your hall booking</h1>
+      <p>Stripe checkout creates a pending payment, calculates the 10% platform fee, and redirects to Stripe.</p>
+    </aside>
+
+    <main class="checkout-main">
+      <section class="checkout-card">
+        <h2>Checkout</h2>
+        <form class="checkout-form" id="checkoutForm">
+          <label>Booking ID
+            <input name="bookingId" type="number" min="1" value="1" required>
+          </label>
+          <label>User ID
+            <input name="userId" type="number" min="1" value="1" required>
+          </label>
+          <label>Hall ID
+            <input name="hallId" type="number" min="1" value="1" required>
+          </label>
+          <label>Owner ID
+            <input name="ownerId" type="number" min="1" value="1" required>
+          </label>
+          <label>Amount
+            <input name="amount" type="number" min="1" step="1" value="100000" required>
+          </label>
+          <label>Currency
+            <input name="currency" value="MNT" maxlength="8" required>
+          </label>
+          <label class="full">Booking name
+            <input name="name" value="Hall booking">
+          </label>
+          <div class="checkout-actions">
+            <a href="/admin-dashboard">Admin dashboard</a>
+            <button type="submit" id="checkoutButton">Checkout with Stripe</button>
+          </div>
+        </form>
+        <p class="checkout-status" id="checkoutStatus"></p>
+      </section>
+    </main>
+  </div>
+
+  <script src="/checkout/script.js"></script>
+</body>
+</html>

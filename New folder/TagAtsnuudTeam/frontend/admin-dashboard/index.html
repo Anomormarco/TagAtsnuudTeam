@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Payment Dashboard</title>
+  <link rel="stylesheet" href="/shared/dashboard.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <p class="brand">Hall Booking</p>
+      <nav class="nav">
+        <a class="active" href="/admin-dashboard">Admin</a>
+        <a href="/owner-dashboard">Owner</a>
+        <a href="/payment-history">History</a>
+        <a href="/checkout">Checkout</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p class="subtitle">Payments, fees, and owner payouts</p>
+        </div>
+      </header>
+
+      <section class="metrics">
+        <article class="metric"><span>Total payments</span><strong id="totalPayments">0</strong></article>
+        <article class="metric"><span>Paid revenue</span><strong id="paidRevenue">0 MNT</strong></article>
+        <article class="metric"><span>Platform fee</span><strong id="platformRevenue">0 MNT</strong></article>
+        <article class="metric"><span>Owner revenue</span><strong id="ownerRevenue">0 MNT</strong></article>
+        <article class="metric"><span>Pending amount</span><strong id="pendingAmount">0 MNT</strong></article>
+        <article class="metric"><span>Failed amount</span><strong id="failedAmount">0 MNT</strong></article>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel">
+          <h2>Recent Payments</h2>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Booking</th><th>Owner</th><th>Amount</th><th>Fee</th><th>Owner</th><th>Status</th></tr>
+            </thead>
+            <tbody id="paymentsTable"></tbody>
+          </table>
+        </article>
+
+        <article class="panel">
+          <h2>Recent Payouts</h2>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Payment</th><th>Owner</th><th>Amount</th><th>Method</th><th>Status</th></tr>
+            </thead>
+            <tbody id="payoutsTable"></tbody>
+          </table>
+        </article>
+
+        <article class="panel">
+          <h2>Payment Statuses</h2>
+          <table>
+            <thead>
+              <tr><th>Status</th><th>Count</th><th>Amount</th></tr>
+            </thead>
+            <tbody id="statusesTable"></tbody>
+          </table>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="/shared/dashboard.js"></script>
+  <script src="/admin-dashboard/script.js"></script>
+</body>
+</html>

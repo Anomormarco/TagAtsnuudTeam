@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment Cancelled</title>
+  <link rel="stylesheet" href="/shared/dashboard.css">
+</head>
+<body>
+  <main class="checkout-main">
+    <section class="checkout-card">
+      <h2>Payment cancelled</h2>
+      <p class="subtitle">The checkout was cancelled before payment. You can retry with the same booking details.</p>
+      <p id="paymentInfo" class="checkout-status"></p>
+      <div class="result-actions">
+        <a class="primary-button" href="/checkout">Try again</a>
+        <a class="secondary-button" href="/admin-dashboard">Admin dashboard</a>
+      </div>
+    </section>
+  </main>
+  <script>
+    const paymentId = new URLSearchParams(window.location.search).get('payment_id');
+    document.getElementById('paymentInfo').textContent = paymentId ? `Payment: #${paymentId}` : '';
+  </script>
+</body>
+</html>

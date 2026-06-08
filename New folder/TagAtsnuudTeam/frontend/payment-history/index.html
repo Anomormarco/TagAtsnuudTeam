@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment History</title>
+  <link rel="stylesheet" href="/shared/dashboard.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <p class="brand">Hall Booking</p>
+      <nav class="nav">
+        <a href="/admin-dashboard">Admin</a>
+        <a href="/owner-dashboard">Owner</a>
+        <a class="active" href="/payment-history">History</a>
+        <a href="/checkout">Checkout</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Payment History</h1>
+          <p class="subtitle">User, owner, and admin payment records</p>
+        </div>
+        <form class="owner-filter" id="historyForm">
+          <select id="historyType" name="historyType">
+            <option value="admin">Admin</option>
+            <option value="user">User</option>
+            <option value="owner">Owner</option>
+          </select>
+          <input id="entityId" name="entityId" type="number" min="1" value="1">
+          <button type="submit">Load</button>
+        </form>
+      </header>
+
+      <section class="content-grid single">
+        <article class="panel">
+          <h2>Payments</h2>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Booking</th><th>User</th><th>Owner</th><th>Amount</th><th>Fee</th><th>Owner amount</th><th>Status</th></tr>
+            </thead>
+            <tbody id="historyTable"></tbody>
+          </table>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="/shared/dashboard.js"></script>
+  <script src="/payment-history/script.js"></script>
+</body>
+</html>

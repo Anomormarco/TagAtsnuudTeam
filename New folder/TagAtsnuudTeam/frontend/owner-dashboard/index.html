@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Owner Payment Dashboard</title>
+  <link rel="stylesheet" href="/shared/dashboard.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <p class="brand">Hall Booking</p>
+      <nav class="nav">
+        <a href="/admin-dashboard">Admin</a>
+        <a class="active" href="/owner-dashboard">Owner</a>
+        <a href="/payment-history">History</a>
+        <a href="/checkout">Checkout</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Owner Dashboard</h1>
+          <p class="subtitle">Revenue and payout overview</p>
+        </div>
+        <form class="owner-filter" id="ownerForm">
+          <label for="ownerId">Owner ID</label>
+          <input id="ownerId" name="ownerId" type="number" min="1" value="1">
+          <button type="submit">Load</button>
+        </form>
+      </header>
+
+      <section class="metrics">
+        <article class="metric"><span>Paid revenue</span><strong id="paidRevenue">0 MNT</strong></article>
+        <article class="metric"><span>Pending revenue</span><strong id="pendingRevenue">0 MNT</strong></article>
+        <article class="metric"><span>Commission paid</span><strong id="paidCommission">0 MNT</strong></article>
+        <article class="metric"><span>Total payments</span><strong id="totalPayments">0</strong></article>
+        <article class="metric"><span>Pending payout</span><strong id="pendingPayoutAmount">0 MNT</strong></article>
+        <article class="metric"><span>Paid payout</span><strong id="paidPayoutAmount">0 MNT</strong></article>
+        <article class="metric"><span>Total payouts</span><strong id="totalPayouts">0</strong></article>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel">
+          <h2>Payments</h2>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Booking</th><th>Hall</th><th>Amount</th><th>Fee</th><th>Owner amount</th><th>Status</th></tr>
+            </thead>
+            <tbody id="paymentsTable"></tbody>
+          </table>
+        </article>
+
+        <article class="panel">
+          <h2>Payouts</h2>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Payment</th><th>Amount</th><th>Method</th><th>Status</th></tr>
+            </thead>
+            <tbody id="payoutsTable"></tbody>
+          </table>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="/shared/dashboard.js"></script>
+  <script src="/owner-dashboard/script.js"></script>
+</body>
+</html>

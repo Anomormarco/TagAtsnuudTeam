@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment Successful</title>
+  <link rel="stylesheet" href="/shared/dashboard.css">
+</head>
+<body>
+  <main class="checkout-main">
+    <section class="checkout-card">
+      <h2>Payment successful</h2>
+      <p class="subtitle">Stripe accepted the payment. The webhook will mark the payment as paid and create a pending owner payout.</p>
+      <p id="sessionInfo" class="checkout-status"></p>
+      <div class="result-actions">
+        <a class="primary-button" href="/admin-dashboard">View admin dashboard</a>
+        <a class="secondary-button" href="/checkout">New checkout</a>
+      </div>
+    </section>
+  </main>
+  <script>
+    const sessionId = new URLSearchParams(window.location.search).get('session_id');
+    document.getElementById('sessionInfo').textContent = sessionId ? `Session: ${sessionId}` : '';
+  </script>
+</body>
+</html>
