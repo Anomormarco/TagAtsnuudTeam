@@ -1,0 +1,8 @@
+{
+  "name": "hall-booking-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "http-server . -p 5174 -c-1"
+  }
+}
