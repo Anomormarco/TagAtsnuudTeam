@@ -1,7 +1,402 @@
-# Заал Захиалгын Систем (Hall Booking System) - Шаардлагын Баримт Бичиг
+# TagAtsnuud Team - Hall Booking System
 
+A comprehensive hall booking platform built with **Node.js/Express** backend and **React** frontend. Features authentication, hall management, booking, reviews, payments, and admin/owner dashboards.
 
-MYNGAA TAGH ATS
+## 📋 Project Overview
+
+### Day 1 — Foundation + MVC + Versioning + Cache Setup
+
+#### **Member 1 — Auth & User (✅ COMPLETED)**
+Backend: User model, Auth routes, controllers, services, repositories
+Frontend: Login, Register, Profile pages
+
+#### **Member 2 — Hall & Category** (📋 Planned)
+Backend: Hall & Category models, routes, controllers, services, repositories
+Frontend: Hall list/detail pages, category filters
+
+#### **Member 3 — Booking & Review** (📋 Planned)
+Backend: Booking & Review models, routes, controllers, services, repositories
+Frontend: Booking page, my bookings, reviews
+
+#### **Member 4 — Payment, Dashboard & Common** (📋 Planned)
+Backend: Payment, OwnderPayout models, routes, controllers, services, repositories, dashboard
+Frontend: Admin/Owner dashboards, payment pages
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- **Node.js** (v14+)
+- **MongoDB** (local or Atlas)
+- **npm** or **yarn**
+
+### Installation
+
+1. **Clone the repository** (or extract the project)
+```bash
+cd TagAtsnuudTeam
+```
+
+2. **Install backend dependencies**
+```bash
+npm install
+```
+
+3. **Setup environment variables**
+```bash
+cp .env.example .env
+```
+Edit `.env` with your configuration:
+```
+PORT=5000
+NODE_ENV=development
+MONGODB_URI=mongodb://localhost:27017/hall-booking
+JWT_SECRET=your-jwt-secret
+JWT_EXPIRY=1h
+REFRESH_TOKEN_SECRET=your-refresh-secret
+REFRESH_TOKEN_EXPIRY=7d
+```
+
+4. **Start MongoDB**
+```bash
+# macOS with Homebrew
+brew services start mongodb-community
+
+# Windows
+# Start MongoDB from Services or run mongod manually
+
+# Docker
+docker run -d -p 27017:27017 --name mongodb mongo
+```
+
+5. **Run the backend server**
+```bash
+# Development (with hot reload)
+npm run dev
+
+# Production
+npm start
+```
+
+Server will start on `http://localhost:5000`
+
+---
+
+## 📁 Project Structure
+
+```
+TagAtsnuudTeam/
+├── Models/                          # Database schemas
+│   └── user.model.js
+├── Controllers/                     # Business logic handlers
+│   └── AuthController.js
+├── Services/                        # Utility services (JWT, validation, etc.)
+│   └── auth.service.js
+├── Repositories/                    # Database operations
+│   └── user.repository.js
+├── Middleware/                      # Express middleware
+│   ├── authMiddleware.js           # JWT verification
+│   └── rateLimit.middleware.js     # Rate limiting (Day 3)
+├── Routhes/                         # API routes
+│   └── AuthRouther.js
+├── utils/                           # Utility functions
+│   ├── response.js                 # Response formatting
+│   ├── pagination.js               # Pagination logic
+│   ├── commission.js               # Commission calculation
+│   └── cache.js                    # In-memory caching
+├── config/                          # Configuration
+│   └── db.js                       # Database connection
+├── frontend/                        # React frontend (future)
+│   └── src/
+│       ├── pages/
+│       │   ├── LoginPage.jsx
+│       │   ├── RegisterPage.jsx
+│       │   └── ProfilePage.jsx
+│       ├── components/
+│       └── utils/
+├── app.js                           # Express app entry point
+├── package.json
+├── .env.example
+└── README.md
+```
+
+---
+
+## 🔐 API Documentation
+
+### Auth Endpoints (All under `/api/v1/auth`)
+
+#### 1. Register User
+```
+POST /api/v1/auth/register
+```
+**Request:**
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "confirmPassword": "password123"
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "User registered successfully",
+  "data": {
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "user"
+    },
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+#### 2. Login User
+```
+POST /api/v1/auth/login
+```
+**Request:**
+```json
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "user"
+    },
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+#### 3. Get Current User Profile
+```
+GET /api/v1/auth/me
+```
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "507f1f77bcf86cd799439011",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": null,
+    "role": "user",
+    "avatar": null,
+    "createdAt": "2024-06-07T10:00:00.000Z"
+  }
+}
+```
+
+#### 4. Logout
+```
+POST /api/v1/auth/logout
+```
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Logout successful"
+}
+```
+
+#### 5. Refresh Token
+```
+POST /api/v1/auth/refresh-token
+```
+**Method 1 - Via Cookie (automatic):**
+```
+(Cookie: refreshToken=...)
+```
+
+**Method 2 - Via Body:**
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Token refreshed",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+---
+
+## 🔒 Security Features (Day 1 Member 1)
+
+- ✅ **Password Hashing**: bcryptjs (10 salt rounds)
+- ✅ **JWT Tokens**: Access token (1h) + Refresh token (7d)
+- ✅ **HttpOnly Cookies**: Secure refresh token storage
+- ✅ **Token Verification**: Custom middleware for protected routes
+- ✅ **Role-Based Fields**: User model supports admin/owner/user roles
+- ✅ **Email Validation**: Format validation + duplicate check
+- ✅ **Password Validation**: Minimum 6 characters required
+- ✅ **Middleware Stack**: Error handling, CORS-ready, rate limiting (Day 3)
+
+---
+
+## 📊 User Model Schema
+
+```javascript
+{
+  name: String (required, trimmed),
+  email: String (required, unique, lowercase),
+  password: String (required, min 6, hashed),
+  phone: String (optional),
+  role: String (enum: 'admin', 'owner', 'user', default: 'user'),
+  avatar: String (optional URL),
+  refreshToken: String (optional, selected=false),
+  isActive: Boolean (default: true),
+  createdAt: Date (auto),
+  updatedAt: Date (auto)
+}
+```
+
+---
+
+## 🎨 Frontend Pages (React)
+
+### LoginPage.jsx
+- Email & password input
+- Error message display
+- Loading state
+- Link to register page
+- Axios integration with `/api/v1/auth/login`
+- Token storage in localStorage
+
+### RegisterPage.jsx
+- Name, email, password, confirm password inputs
+- Form validation (password length, match)
+- Error handling
+- Link to login page
+- Axios integration with `/api/v1/auth/register`
+
+### ProfilePage.jsx
+- Fetch user profile from `/api/v1/auth/me`
+- Display avatar/initials
+- Show user details (name, email, phone, role, joined date)
+- Logout button
+- Protected route (redirects to login if no token)
+
+---
+
+## 🗝️ Authentication Flow
+
+1. **Register** → Hash password → Save user → Generate tokens → Return accessToken
+2. **Login** → Verify email → Compare password → Generate tokens → Set refreshToken cookie
+3. **Protected Routes** → Check Authorization header → Verify JWT → Attach user to request
+4. **Refresh Token** → Verify refresh token → Generate new access token → Update cookie
+5. **Logout** → Clear refresh token in DB → Clear cookie
+
+---
+
+## 📦 Dependencies
+
+```json
+{
+  "bcryptjs": "^2.4.3",          // Password hashing
+  "cookie-parser": "^1.4.6",     // Parse cookies
+  "cors": "^2.8.6",              // Cross-origin support
+  "express": "^5.2.1",           // Web framework
+  "jsonwebtoken": "^9.1.2",      // JWT creation/verification
+  "mongoose": "^7.5.0",          // MongoDB ODM
+  "dotenv": "^16.3.1"            // Environment variables
+}
+```
+
+---
+
+## 🧪 Testing
+
+Test the auth endpoints using **Postman** or **cURL**:
+
+```bash
+# Register
+curl -X POST http://localhost:5000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"John","email":"john@test.com","password":"123456","confirmPassword":"123456"}'
+
+# Login
+curl -X POST http://localhost:5000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"john@test.com","password":"123456"}'
+
+# Get profile (replace TOKEN with actual token)
+curl -X GET http://localhost:5000/api/v1/auth/me \
+  -H "Authorization: Bearer TOKEN"
+```
+
+---
+
+## 📅 What's Next
+
+- **Day 1 Member 2**: Hall & Category management
+- **Day 1 Member 3**: Booking & Review system
+- **Day 1 Member 4**: Payment, Dashboard, Rate limiting
+- **Day 2**: Database integration, caching, optimization
+- **Day 3**: Business logic, security, cache invalidation
+- **Day 4**: Testing, documentation, deployment
+
+---
+
+## 📝 Notes
+
+- JWT secret should be strong in production (use random generator)
+- MongoDB connection URI should use Atlas or local instance
+- Frontend Axios baseURL should be `/api/v1`
+- Rate limiting middleware will be added in Day 3
+- v2/v3 versioning will be implemented as breaking changes occur
+
+---
+
+## 👥 Team
+
+- **Member 1** (You): Auth & User ✅
+- **Member 2**: Hall & Category 📋
+- **Member 3**: Booking & Review 📋
+- **Member 4**: Payment & Dashboard 📋
+
+---
+
+## 📄 License
+
+ISC
 
 ## 1. Төслийн танилцуулга
 
