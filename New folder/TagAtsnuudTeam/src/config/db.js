@@ -1,40 +1,31 @@
-require('dotenv').config();
-const mysql = require('mysql2/promise');
+const mysql = require("mysql2/promise");
 
-let pool;
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || "localhost",
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "hall_booking",
+  waitForConnections: true,
+  connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
+  queueLimit: 0,
+});
 
-const initializeDB = async () => {
-  pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'Aa80622400@',
-    database: process.env.DB_NAME || 'zaal',
-    waitForConnections: true,
-    connectionLimit: 10,
-  });
+const testConnection = async () => {
+  const connection = await pool.getConnection();
 
-  const conn = await pool.getConnection();
-  conn.release();
-
-  await pool.execute(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      email VARCHAR(255) NOT NULL UNIQUE,
-      password VARCHAR(255) NOT NULL,
-      phone VARCHAR(50) DEFAULT NULL,
-      role ENUM('admin','owner','user') DEFAULT 'user',
-      avatar VARCHAR(500) DEFAULT NULL,
-      refresh_token TEXT DEFAULT NULL,
-      is_active TINYINT(1) DEFAULT 1,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )
-  `);
-
-  console.log('✓ MySQL connected successfully');
+  try {
+    await connection.ping();
+    return true;
+  } finally {
+    connection.release();
+  }
 };
 
-const getPool = () => pool;
-
-module.exports = { initializeDB, getPool };
+module.exports = {
+  execute: (...args) => pool.execute(...args),
+  query: (...args) => pool.query(...args),
+  getConnection: (...args) => pool.getConnection(...args),
+  testConnection,
+  end: (...args) => pool.end(...args),
+};

@@ -464,9 +464,23 @@ Database
 * JWT
 * bcrypt
 * Stripe
-* Swagger/OpenAPI
 * dotenv
 * cors
+* cache
+* RateLimit
+* express-async-handler
+* multer
+
+
+
+
+
+
+
+
+
+
+
 
 ## Frontend
 
