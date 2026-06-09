@@ -9,11 +9,19 @@ const db = require("./src/config/db");
 const { globalLimiter, authLimiter, apiLimiter } = require("./src/middleware/rateLimit.middleware");
 const { notFound, errorHandler } = require("./src/middleware/error.middleware");
 const { sendSuccess } = require("./src/utils/response");
+const paymentController = require('./src/controllers/payment.controller');
+const paymentRoutes = require('./src/routes/payment.routes');
+const v2Routes = require('./src/routes/v2.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({ origin: process.env.CORS_ORIGIN || true, credentials: true }));
+app.post(
+  '/api/v1/payments/stripe/webhook',
+  express.raw({ type: 'application/json' }),
+  paymentController.handleStripeWebhook
+);
 app.use(express.json());
 app.use((req, res, next) => {
   req.cookies = Object.fromEntries(

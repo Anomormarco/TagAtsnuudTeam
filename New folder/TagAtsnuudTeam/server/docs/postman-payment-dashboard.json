@@ -1,0 +1,52 @@
+{
+  "info": {
+    "name": "Hall Booking Payment Dashboard API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Admin Dashboard",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/dashboard/admin"
+      }
+    },
+    {
+      "name": "Owner Dashboard",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/dashboard/owner/1"
+      }
+    },
+    {
+      "name": "Create Checkout Session",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"bookingId\":1,\"userId\":1,\"hallId\":1,\"ownerId\":1,\"amount\":100000,\"currency\":\"MNT\"}"
+        },
+        "url": "{{baseUrl}}/api/v1/payments/checkout-session"
+      }
+    },
+    {
+      "name": "Commission Report",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/payments/commission-report"
+      }
+    }
+  ]
+}
