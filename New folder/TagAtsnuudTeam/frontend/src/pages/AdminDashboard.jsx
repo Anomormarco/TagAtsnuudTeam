@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
 
-/**
- * Admin Dashboard
- * System-wide analytics and management for administrators
- */
 const AdminDashboard = () => {
   const [stats] = useState({
     totalUsers: 1250,
@@ -25,8 +21,6 @@ const AdminDashboard = () => {
     <div className="admin-dashboard">
       <div className="container">
         <h1>⚙️ Admin Dashboard</h1>
-
-        {/* Key Metrics */}
         <div className="metrics-grid">
           <div className="metric-card">
             <h4>Total Users</h4>
@@ -64,8 +58,6 @@ const AdminDashboard = () => {
             <span className="metric-change">↑ 3 new this month</span>
           </div>
         </div>
-
-        {/* System Status */}
         <section className="status-section">
           <h2>System Status</h2>
           <div className="status-grid">
@@ -78,8 +70,6 @@ const AdminDashboard = () => {
             ))}
           </div>
         </section>
-
-        {/* Recent Activities */}
         <div className="section-row">
           <section className="activity-section">
             <h2>Recent Bookings</h2>
@@ -115,8 +105,6 @@ const AdminDashboard = () => {
             </div>
           </section>
         </div>
-
-        {/* User Verification Queue */}
         <section className="verification-section">
           <h2>Pending Verifications</h2>
           <div className="verification-table">
@@ -147,33 +135,31 @@ const AdminDashboard = () => {
             </table>
           </div>
         </section>
-
-        {/* Admin Tools */}
         <section className="tools-section">
           <h2>Admin Tools</h2>
           <div className="tools-grid">
             <button className="tool-btn">
-              <span>👥</span>
+              <span>||</span>
               <span>Manage Users</span>
             </button>
             <button className="tool-btn">
-              <span>🏢</span>
+              <span>[^]</span>
               <span>Manage Halls</span>
             </button>
             <button className="tool-btn">
-              <span>📋</span>
+              <span>[]</span>
               <span>Manage Bookings</span>
             </button>
             <button className="tool-btn">
-              <span>⚠️</span>
+              <span>!</span>
               <span>Review Reports</span>
             </button>
             <button className="tool-btn">
-              <span>💰</span>
+              <span>$</span>
               <span>Financial Reports</span>
             </button>
             <button className="tool-btn">
-              <span>📊</span>
+              <span>^^</span>
               <span>Analytics</span>
             </button>
             <button className="tool-btn">
@@ -181,7 +167,7 @@ const AdminDashboard = () => {
               <span>Send Messages</span>
             </button>
             <button className="tool-btn">
-              <span>⚙️</span>
+              <span>OP</span>
               <span>Settings</span>
             </button>
           </div>

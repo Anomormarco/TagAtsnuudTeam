@@ -32,13 +32,18 @@ const RegisterPage = () => {
   };
 
   const validateForm = () => {
+    const passwordRegex = /^.{8,}$/;
+
+  
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
       setError('All fields are required');
       return false;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    const passwordRegex = /^.{8,}$/;
+
+    if (!passwordRegex.test(formData.password)) {
+      setError('Password must be at least 8 characters');
       return false;
     }
 
