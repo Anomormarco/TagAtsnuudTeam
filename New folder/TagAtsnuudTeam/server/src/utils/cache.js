@@ -23,6 +23,17 @@ const set = (key, value, ttlMs = DEFAULT_TTL_MS) => {
   });
 };
 
+const remember = async (key, ttlMs, factory) => {
+  const cached = get(key);
+  if (cached !== null) {
+    return cached;
+  }
+
+  const value = await factory();
+  set(key, value, ttlMs || DEFAULT_TTL_MS);
+  return value;
+};
+
 const clearByPrefix = (prefix) => {
   for (const key of store.keys()) {
     if (key.startsWith(prefix)) {
@@ -46,10 +57,19 @@ const clear = () => {
 
 const keys = () => Array.from(store.keys());
 
+const clearPaymentCache = () => {
+  clearByPrefix("payment");
+  clearByPrefix("payments");
+  clearByPrefix("dashboard");
+  clearByPrefix("commission-report");
+};
+
 module.exports = {
   get,
   set,
+  remember,
   clearByPrefix,
+  clearPaymentCache,
   has,
   clear,
   keys,

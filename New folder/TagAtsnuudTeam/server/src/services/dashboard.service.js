@@ -1,4 +1,4 @@
-const dashboardRepository = require('./dashboard.repository');
+const dashboardRepository = require('../repositories/dashboard.repository');
 const cache = require('../utils/cache');
 
 module.exports = {

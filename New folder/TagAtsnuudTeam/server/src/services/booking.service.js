@@ -1,86 +1,81 @@
-import * as bookingRepository from "../repositories/booking.repository.js";
-import * as reviewRepository from "../repositories/review.repository.js";
-import { ApiError } from "../utils/ApiError.js";
+const bookingRepository = require("../repositories/booking.repository");
+const reviewRepository = require("../repositories/review.repository");
+const ApiError = require("../utils/apiError");
 
-const CACHE_TTL_MS = 15000; // Available time cache-ийн хугацаа, миллисекундээр.
-const availableTimeCache = new Map(); // In-memory cache.
+const CACHE_TTL_MS = 15000;
+const availableTimeCache = new Map();
 
-export const calculateTotalPrice = (pricePerHour, startTime, endTime) => {
+const calculateTotalPrice = (pricePerHour, startTime, endTime) => {
   const durationMs = new Date(endTime).getTime() - new Date(startTime).getTime();
   if (durationMs <= 0) {
-    throw new ApiError(400, "Start_time болон end_time хоорондын интервал 0-ээс их байх ёстой.");
+    throw new ApiError(400, "start_time and end_time must be a valid range");
   }
 
-  const hours = durationMs / 1000 / 60 / 60; // Цагийн хугацаа бутархайгаар.
-  return Number((hours * Number(pricePerHour)).toFixed(2)); // 2 оронтой багадаа формат.
+  const hours = durationMs / 1000 / 60 / 60;
+  return Number((hours * Number(pricePerHour)).toFixed(2));
 };
 
-export const isValidDateRange = (startTime, endTime) => {
-  return new Date(startTime).getTime() < new Date(endTime).getTime();
-};
+const isValidDateRange = (startTime, endTime) => new Date(startTime).getTime() < new Date(endTime).getTime();
 
-const getCacheKey = (hallId) => `hall_${hallId}`; // Cache түлхүүр үүсгэх.
+const getCacheKey = (hallId) => `hall_${hallId}`;
 
 const clearHallCache = (hallId) => {
-  availableTimeCache.delete(getCacheKey(hallId)); // Хүснэгтээс тухайн заалын cache-ийг арилгана.
+  availableTimeCache.delete(getCacheKey(hallId));
 };
 
-export const createBooking = async ({ user_id, hall_id, start_time, end_time }) => {
+const createBooking = async ({ user_id, hall_id, start_time, end_time }) => {
   if (!user_id || !hall_id || !start_time || !end_time) {
-    throw new ApiError(400, "user_id, hall_id, start_time, end_time бүгд шаардлагатай.");
+    throw new ApiError(400, "user_id, hall_id, start_time, end_time are required");
   }
   if (!isValidDateRange(start_time, end_time)) {
-    throw new ApiError(400, "Эхлэх цаг дуусах цагаас өмнө байх ёстой.");
+    throw new ApiError(400, "start_time must be before end_time");
   }
 
   const hall = await bookingRepository.getHallById(hall_id);
   if (!hall) {
-    throw new ApiError(404, "Заал олдсонгүй.");
+    throw new ApiError(404, "Hall not found");
   }
-  if (hall.status !== "ACTIVE") {
-    throw new ApiError(400, "Энэ заал одоогоор захиалга авах боломжгүй.");
+  if (hall.status && !["ACTIVE", "AVAILABLE"].includes(hall.status)) {
+    throw new ApiError(400, "Hall is not available for booking");
   }
 
   const overlaps = await bookingRepository.hasOverlappingBooking({ hall_id, start_time, end_time });
   if (overlaps) {
-    throw new ApiError(409, "Энэ цаг дээр захиалга давхцаж байна.");
+    throw new ApiError(409, "Booking time overlaps with another booking");
   }
 
   const total_price = calculateTotalPrice(hall.price_per_hour, start_time, end_time);
   const booking = await bookingRepository.createBooking({ user_id, hall_id, start_time, end_time, total_price });
-  clearHallCache(hall_id); // Шинэ booking үүссэн тул cache-ийг арилгана.
+  clearHallCache(hall_id);
   return booking;
 };
 
-export const getMyBookings = async (userId) => {
+const getMyBookings = async (userId) => {
   if (!userId) {
-    throw new ApiError(400, "userId шаардлагатай.");
+    throw new ApiError(400, "userId is required");
   }
   return bookingRepository.getBookingsByUserId(userId);
 };
 
-export const getBooking = async (id) => {
+const getBooking = async (id) => {
   const booking = await bookingRepository.getBookingById(id);
   if (!booking) {
-    throw new ApiError(404, "Захиалга олдсонгүй.");
+    throw new ApiError(404, "Booking not found");
   }
   return booking;
 };
 
-export const updateBooking = async (id, updates) => {
-  const booking = await bookingRepository.getBookingById(id);
-  if (!booking) {
-    throw new ApiError(404, "Захиалга олдсонгүй.");
-  }
+const updateBooking = async (id, updates) => {
+  const booking = await getBooking(id);
 
   if (updates.status && !["PENDING", "PAID", "CANCELLED", "COMPLETED"].includes(updates.status)) {
-    throw new ApiError(400, "Захиалгын статус буруу байна.");
+    throw new ApiError(400, "Invalid booking status");
   }
 
   const start_time = updates.start_time || booking.start_time;
   const end_time = updates.end_time || booking.end_time;
   if (!isValidDateRange(start_time, end_time)) {
-    throw new ApiError(400, "Эхлэх цаг дуусах цагаас өмнө байх ёстой.");
+    throw new ApiError(400, "start_time must be before end_time");
   }
 
   const overlaps = await bookingRepository.hasOverlappingBooking({
@@ -91,39 +86,33 @@ export const updateBooking = async (id, updates) => {
   });
 
   if (overlaps) {
-    throw new ApiError(409, "Энэ цаг дээр захиалга давхцаж байна.");
+    throw new ApiError(409, "Booking time overlaps with another booking");
   }
 
   const hall = await bookingRepository.getHallById(booking.hall_id);
   const total_price = calculateTotalPrice(hall.price_per_hour, start_time, end_time);
   const updatedBooking = await bookingRepository.updateBooking(id, { ...updates, total_price });
-  clearHallCache(booking.hall_id); // Үйлдэл хийсэн тохиолдолд cache-ийг цэвэрлэнэ.
+  clearHallCache(booking.hall_id);
   return updatedBooking;
 };
 
-export const cancelBooking = async (id) => {
-  const booking = await bookingRepository.getBookingById(id);
-  if (!booking) {
-    throw new ApiError(404, "Захиалга олдсонгүй.");
-  }
+const cancelBooking = async (id) => {
+  const booking = await getBooking(id);
   const cancelled = await bookingRepository.cancelBooking(id);
-  clearHallCache(booking.hall_id); // Cancel хийсэн үед cache-ийг арилгана.
+  clearHallCache(booking.hall_id);
   return cancelled;
 };
 
-export const softDeleteBooking = async (id) => {
-  const booking = await bookingRepository.getBookingById(id);
-  if (!booking) {
-    throw new ApiError(404, "Захиалга олдсонгүй.");
-  }
+const softDeleteBooking = async (id) => {
+  const booking = await getBooking(id);
   await bookingRepository.softDeleteBooking(id);
-  clearHallCache(booking.hall_id); // Soft delete хийсэн үед cache-ийг цэвэрлэнэ.
+  clearHallCache(booking.hall_id);
   return true;
 };
 
-export const getHallAvailability = async (hallId, startTime, endTime) => {
+const getHallAvailability = async (hallId, startTime, endTime) => {
   if (!hallId) {
-    throw new ApiError(400, "hall_id шаардлагатай.");
+    throw new ApiError(400, "hall_id is required");
   }
 
   const cacheKey = getCacheKey(hallId);
@@ -153,44 +142,55 @@ export const getHallAvailability = async (hallId, startTime, endTime) => {
   };
 };
 
-export const checkOverlap = async ({ hall_id, start_time, end_time, ignoreBookingId }) => {
+const checkOverlap = async ({ hall_id, start_time, end_time, ignoreBookingId }) => {
   if (!hall_id || !start_time || !end_time) {
-    throw new ApiError(400, "hall_id, start_time болон end_time шаардлагатай.");
+    throw new ApiError(400, "hall_id, start_time and end_time are required");
   }
   if (!isValidDateRange(start_time, end_time)) {
-    throw new ApiError(400, "Эхлэх цаг дуусах цагаас өмнө байх ёстой.");
+    throw new ApiError(400, "start_time must be before end_time");
   }
-  const overlaps = await bookingRepository.hasOverlappingBooking({ hall_id, start_time, end_time, ignoreBookingId });
-  return overlaps;
+  return bookingRepository.hasOverlappingBooking({ hall_id, start_time, end_time, ignoreBookingId });
 };
 
-export const createReview = async ({ booking_id, user_id, rating, comment }) => {
-  if (!booking_id || !user_id || rating == null || !comment) {
-    throw new ApiError(400, "booking_id, user_id, rating, comment бүгд шаардлагатай.");
+const createReview = async ({ hall_id, user_id, rating, comment }) => {
+  if (!hall_id || !user_id || rating == null) {
+    throw new ApiError(400, "hall_id, user_id and rating are required");
   }
   if (Number(rating) < 1 || Number(rating) > 5) {
-    throw new ApiError(400, "rating нь 1-5 хооронд байх ёстой.");
+    throw new ApiError(400, "rating must be between 1 and 5");
   }
 
-  const booking = await bookingRepository.getBookingById(booking_id);
-  if (!booking) {
-    throw new ApiError(404, "Захиалга олдсонгүй.");
-  }
-  if (booking.user_id !== Number(user_id)) {
-    throw new ApiError(403, "Зөвхөн тухайн booking хийсэн хэрэглэгч review бичиж болно.");
+  const hall = await bookingRepository.getHallById(hall_id);
+  if (!hall) {
+    throw new ApiError(404, "Hall not found");
   }
 
-  const existing = await reviewRepository.getReviewByBookingAndUser(booking_id, user_id);
+  const existing = await reviewRepository.getReviewByHallAndUser(hall_id, user_id);
   if (existing) {
-    throw new ApiError(409, "Та энэ захиалгын талаар аль хэдийн review бичсэн байна.");
+    throw new ApiError(409, "Review already exists for this hall");
   }
 
-  return reviewRepository.createReview({ booking_id, user_id, rating, comment });
+  return reviewRepository.createReview({ hall_id, user_id, rating, comment });
 };
 
-export const getReviews = async (bookingId) => {
-  if (!bookingId) {
-    throw new ApiError(400, "bookingId шаардлагатай.");
+const getReviews = async (hallId) => {
+  if (!hallId) {
+    throw new ApiError(400, "hallId is required");
   }
-  return reviewRepository.getReviewsByBookingId(bookingId);
+  return reviewRepository.getReviewsByHallId(hallId);
+};
+
+module.exports = {
+  calculateTotalPrice,
+  cancelBooking,
+  checkOverlap,
+  createBooking,
+  createReview,
+  getBooking,
+  getHallAvailability,
+  getMyBookings,
+  getReviews,
+  isValidDateRange,
+  softDeleteBooking,
+  updateBooking,
 };

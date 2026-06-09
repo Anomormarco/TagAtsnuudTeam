@@ -28,6 +28,8 @@ const mapHallRow = (row) => {
           name: categoryNames[index],
         })
     ),
+    rating: Number(row.average_rating || 0),
+    reviewCount: Number(row.review_count || 0),
   };
 };
 
@@ -66,8 +68,10 @@ const baseSelect = `
     h.status,
     h.created_at,
     h.updated_at,
-    GROUP_CONCAT(c.id ORDER BY c.name) AS category_ids,
-    GROUP_CONCAT(c.name ORDER BY c.name) AS category_names
+    COALESCE(ROUND(AVG(r.rating), 1), 0) AS average_rating,
+    COUNT(DISTINCT r.id) AS review_count,
+    GROUP_CONCAT(DISTINCT c.id ORDER BY c.name) AS category_ids,
+    GROUP_CONCAT(DISTINCT c.name ORDER BY c.name) AS category_names
   FROM halls h
   LEFT JOIN hall_images thumb ON thumb.id = (
     SELECT hi.id
@@ -78,6 +82,7 @@ const baseSelect = `
   )
   LEFT JOIN hall_categories hc ON hc.hall_id = h.id
   LEFT JOIN categories c ON c.id = hc.category_id
+  LEFT JOIN reviews r ON r.hall_id = h.id AND r.deleted_at IS NULL
 `;
 
 const buildWhere = ({ keyword, category, location } = {}) => {
@@ -120,7 +125,7 @@ const parseSort = (sort = "created_at,desc") => {
 
 const findAll = async (filters = {}) => {
   const page = Math.max(Number(filters.page) || 1, 1);
-  const size = Math.min(Math.max(Number(filters.size) || 12, 1), 50);
+  const size = Math.min(Math.max(Number(filters.size) || 12, 1), 200);
   const offset = (page - 1) * size;
   const where = buildWhere(filters);
   const orderBy = parseSort(filters.sort);

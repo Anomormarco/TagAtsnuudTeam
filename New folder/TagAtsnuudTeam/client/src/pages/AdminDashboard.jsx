@@ -1,175 +1,154 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import apiClient from '../utils/apiClient';
 
 const AdminDashboard = () => {
-  const [stats] = useState({
-    totalUsers: 1250,
-    totalBookings: 456,
-    totalRevenue: 22500000,
-    platformFee: 2250000,
-    totalHalls: 145,
-    activeOwners: 89
-  });
+  const [stats, setStats] = useState(null);
 
   const [systemStatus] = useState({
-    database: 'Healthy',
-    api: 'Online',
+    database: 'Хэвийн',
+    api: 'Ажиллаж байна',
     storage: '75%',
-    uptime: '99.8%'
+    uptime: '99.8%',
   });
+
+  useEffect(() => {
+    apiClient.get('/dashboard/admin')
+      .then((response) => setStats(response.data))
+      .catch(() => setStats({
+        totalUsers: 0,
+        totalBookings: 0,
+        totalHalls: 0,
+        paidRevenue: 0,
+        platformRevenue: 0,
+        ownerRevenue: 0,
+        recentPayments: [],
+      }));
+  }, []);
+
+  if (!stats) {
+    return <div className="admin-dashboard"><div className="container">Ачаалж байна...</div></div>;
+  }
 
   return (
     <div className="admin-dashboard">
       <div className="container">
-        <h1>⚙️ Admin Dashboard</h1>
+        <h1>Админ самбар</h1>
+
         <div className="metrics-grid">
           <div className="metric-card">
-            <h4>Total Users</h4>
+            <h4>Нийт хэрэглэгч</h4>
             <p className="metric-value">{stats.totalUsers}</p>
-            <span className="metric-change">↑ 12% from last month</span>
+            <span className="metric-change">Өнгөрсөн сараас 12% өссөн</span>
           </div>
-
           <div className="metric-card">
-            <h4>Total Bookings</h4>
+            <h4>Нийт захиалга</h4>
             <p className="metric-value">{stats.totalBookings}</p>
-            <span className="metric-change">↑ 8% from last month</span>
+            <span className="metric-change">Өнгөрсөн сараас 8% өссөн</span>
           </div>
-
           <div className="metric-card">
-            <h4>Total Revenue</h4>
-            <p className="metric-value">₮{(stats.totalRevenue / 1000000).toFixed(1)}M</p>
-            <span className="metric-change">↑ 15% from last month</span>
+            <h4>Нийт орлого</h4>
+            <p className="metric-value">₮{(Number(stats.paidRevenue) / 1000000).toFixed(1)} сая</p>
+            <span className="metric-change">Өнгөрсөн сараас 15% өссөн</span>
           </div>
-
           <div className="metric-card">
-            <h4>Platform Fee</h4>
-            <p className="metric-value">₮{(stats.platformFee / 1000000).toFixed(1)}M</p>
-            <span className="metric-change">10% commission</span>
+            <h4>Платформ шимтгэл</h4>
+            <p className="metric-value">₮{(Number(stats.platformRevenue) / 1000000).toFixed(1)} сая</p>
+            <span className="metric-change">10% шимтгэл</span>
           </div>
-
           <div className="metric-card">
-            <h4>Active Halls</h4>
+            <h4>Идэвхтэй заал</h4>
             <p className="metric-value">{stats.totalHalls}</p>
-            <span className="metric-change">↑ 5 new this month</span>
+            <span className="metric-change">Энэ сард 5 заал нэмэгдсэн</span>
           </div>
-
           <div className="metric-card">
-            <h4>Hall Owners</h4>
-            <p className="metric-value">{stats.activeOwners}</p>
-            <span className="metric-change">↑ 3 new this month</span>
+            <h4>Заал эзэмшигч</h4>
+            <p className="metric-value">{stats.recentPayouts?.length || 0}</p>
+            <span className="metric-change">Энэ сард 3 эзэмшигч нэмэгдсэн</span>
           </div>
         </div>
-        <section className="status-section">
-          <h2>System Status</h2>
+
+        <section className="panel">
+          <h2>Системийн төлөв</h2>
           <div className="status-grid">
             {Object.entries(systemStatus).map(([key, value]) => (
               <div key={key} className="status-item">
-                <span className="status-label">{key.charAt(0).toUpperCase() + key.slice(1)}</span>
+                <span className="status-label">{key}</span>
                 <span className="status-value">{value}</span>
-                <span className={`status-indicator ${value === 'Healthy' || value === 'Online' ? 'ok' : ''}`} />
+                <span className="status-indicator ok" />
               </div>
             ))}
           </div>
         </section>
+
         <div className="section-row">
-          <section className="activity-section">
-            <h2>Recent Bookings</h2>
+          <section className="panel">
+            <h2>Сүүлийн захиалгууд</h2>
             <div className="activity-list">
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="activity-item">
-                  <div className="activity-icon">📅</div>
+              {(stats.recentPayments || []).map((payment) => (
+                <div key={payment.id} className="activity-item">
                   <div className="activity-content">
-                    <p><strong>Booking #{i.toString().padStart(4, '0')}</strong></p>
-                    <p className="activity-meta">Grand Ballroom • ₮600,000 • Confirmed</p>
+                    <p><strong>Захиалга #{String(payment.bookingId).padStart(4, '0')}</strong></p>
+                    <p className="activity-meta">{payment.hallName || 'Заал'} · ₮{Number(payment.amount).toLocaleString()} · {payment.status}</p>
                   </div>
-                  <span className="activity-time">2h ago</span>
+                  <span className="activity-time">{new Date(payment.createdAt).toLocaleDateString()}</span>
                 </div>
               ))}
             </div>
           </section>
 
-          <section className="revenue-section">
-            <h2>Revenue Breakdown</h2>
+          <section className="panel">
+            <h2>Орлогын задаргаа</h2>
             <div className="revenue-chart">
               <div className="chart-item">
                 <div className="chart-bar">
-                  <div className="bar-segment" style={{ width: '70%', backgroundColor: '#667eea' }} />
+                  <div className="bar-segment" style={{ width: '70%', backgroundColor: 'var(--color-primary)' }} />
                 </div>
-                <span className="chart-label">Hall Bookings: ₮{(stats.totalRevenue * 0.9).toLocaleString()}</span>
+                <span className="chart-label">Заалын захиалга: ₮{Number(stats.paidRevenue).toLocaleString()}</span>
               </div>
               <div className="chart-item">
                 <div className="chart-bar">
-                  <div className="bar-segment" style={{ width: '10%', backgroundColor: '#28a745' }} />
+                  <div className="bar-segment" style={{ width: '10%', backgroundColor: 'var(--color-success)' }} />
                 </div>
-                <span className="chart-label">Platform Fee: ₮{stats.platformFee.toLocaleString()}</span>
+                <span className="chart-label">Платформ шимтгэл: ₮{Number(stats.platformRevenue).toLocaleString()}</span>
               </div>
             </div>
           </section>
         </div>
-        <section className="verification-section">
-          <h2>Pending Verifications</h2>
+
+        <section className="panel">
+          <h2>Сүүлийн шилжүүлгүүд</h2>
           <div className="verification-table">
             <table>
               <thead>
                 <tr>
-                  <th>User</th>
-                  <th>Type</th>
-                  <th>Date Submitted</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th>Эзэмшигч</th>
+                  <th>Төлбөр</th>
+                  <th>Дүн</th>
+                  <th>Төлөв</th>
+                  <th>Огноо</th>
                 </tr>
               </thead>
               <tbody>
-                {[1, 2, 3].map(i => (
-                  <tr key={i}>
-                    <td>User #{i}</td>
-                    <td>Hall Owner</td>
-                    <td>2024-06-{String(10 + i).padStart(2, '0')}</td>
-                    <td><span className="badge pending">Pending</span></td>
-                    <td>
-                      <button className="btn-small approve">Approve</button>
-                      <button className="btn-small reject">Reject</button>
-                    </td>
+                {(stats.recentPayouts || []).map((payout) => (
+                  <tr key={payout.id}>
+                    <td>Эзэмшигч #{payout.ownerId}</td>
+                    <td>Төлбөр #{payout.paymentId}</td>
+                    <td>₮{Number(payout.amount).toLocaleString()}</td>
+                    <td><span className="badge pending">{payout.status}</span></td>
+                    <td>{new Date(payout.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </section>
-        <section className="tools-section">
-          <h2>Admin Tools</h2>
+
+        <section className="panel">
+          <h2>Удирдлагын хэрэгслүүд</h2>
           <div className="tools-grid">
-            <button className="tool-btn">
-              <span>||</span>
-              <span>Manage Users</span>
-            </button>
-            <button className="tool-btn">
-              <span>[^]</span>
-              <span>Manage Halls</span>
-            </button>
-            <button className="tool-btn">
-              <span>[]</span>
-              <span>Manage Bookings</span>
-            </button>
-            <button className="tool-btn">
-              <span>!</span>
-              <span>Review Reports</span>
-            </button>
-            <button className="tool-btn">
-              <span>$</span>
-              <span>Financial Reports</span>
-            </button>
-            <button className="tool-btn">
-              <span>^^</span>
-              <span>Analytics</span>
-            </button>
-            <button className="tool-btn">
-              <span>📧</span>
-              <span>Send Messages</span>
-            </button>
-            <button className="tool-btn">
-              <span>OP</span>
-              <span>Settings</span>
-            </button>
+            {['Хэрэглэгч', 'Заал', 'Захиалга', 'Тайлан', 'Санхүү', 'Тохиргоо'].map((item) => (
+              <button key={item} className="tool-btn">{item}</button>
+            ))}
           </div>
         </section>
       </div>
@@ -177,7 +156,7 @@ const AdminDashboard = () => {
       <style>{`
         .admin-dashboard {
           padding: 30px 0;
-          background: #f8f9fa;
+          background: var(--color-page);
           min-height: calc(100vh - 200px);
         }
 
@@ -189,68 +168,69 @@ const AdminDashboard = () => {
 
         .admin-dashboard h1 {
           font-size: 28px;
-          color: #333;
-          margin-bottom: 30px;
+          color: var(--color-text);
+          margin-bottom: 24px;
         }
 
         .metrics-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 20px;
-          margin-bottom: 30px;
+          gap: 18px;
+          margin-bottom: 24px;
+        }
+
+        .metric-card,
+        .panel {
+          background: white;
+          border-radius: 8px;
+          box-shadow: var(--shadow-card);
+          border: 1px solid var(--color-border);
         }
 
         .metric-card {
-          background: white;
-          padding: 20px;
-          border-radius: 10px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-          border-top: 4px solid #667eea;
+          padding: 18px;
+          border-top: 4px solid var(--color-primary);
         }
 
         .metric-card h4 {
           margin: 0 0 10px 0;
-          color: #666;
+          color: var(--color-muted);
           font-size: 12px;
-          text-transform: uppercase;
-          font-weight: 600;
+          font-weight: 800;
         }
 
         .metric-value {
           margin: 0 0 8px 0;
-          font-size: 28px;
-          font-weight: 700;
-          color: #333;
+          font-size: 27px;
+          font-weight: 800;
+          color: var(--color-text);
         }
 
         .metric-change {
           font-size: 12px;
-          color: #28a745;
+          color: var(--color-success);
         }
 
-        .status-section {
-          background: white;
-          padding: 30px;
-          border-radius: 10px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-          margin-bottom: 30px;
+        .panel {
+          padding: 24px;
+          margin-bottom: 24px;
         }
 
-        .status-section h2 {
-          margin: 0 0 20px 0;
+        .panel h2 {
+          margin: 0 0 18px 0;
           font-size: 20px;
-          color: #333;
+          color: var(--color-text);
         }
 
         .status-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-          gap: 15px;
+          gap: 14px;
         }
 
         .status-item {
-          background: #f9f9f9;
-          padding: 15px;
+          background: var(--color-surface-warm);
+          padding: 14px;
           border-radius: 8px;
           position: relative;
           display: flex;
@@ -260,51 +240,30 @@ const AdminDashboard = () => {
 
         .status-label {
           font-size: 12px;
-          color: #666;
-          font-weight: 600;
-          text-transform: uppercase;
+          color: var(--color-muted);
+          font-weight: 800;
         }
 
         .status-value {
-          font-size: 18px;
-          font-weight: 700;
-          color: #333;
+          font-size: 17px;
+          font-weight: 800;
+          color: var(--color-text);
         }
 
         .status-indicator {
           width: 10px;
           height: 10px;
           border-radius: 50%;
-          background: #dc3545;
+          background: var(--color-success);
           position: absolute;
-          top: 10px;
-          right: 10px;
-        }
-
-        .status-indicator.ok {
-          background: #28a745;
+          top: 12px;
+          right: 12px;
         }
 
         .section-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 30px;
-          margin-bottom: 30px;
-        }
-
-        .activity-section,
-        .revenue-section {
-          background: white;
-          padding: 30px;
-          border-radius: 10px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        .activity-section h2,
-        .revenue-section h2 {
-          margin: 0 0 20px 0;
-          font-size: 20px;
-          color: #333;
+          gap: 24px;
         }
 
         .activity-list {
@@ -317,13 +276,9 @@ const AdminDashboard = () => {
           display: flex;
           gap: 12px;
           padding: 12px;
-          background: #f9f9f9;
+          background: var(--color-surface-warm);
           border-radius: 8px;
           align-items: center;
-        }
-
-        .activity-icon {
-          font-size: 20px;
         }
 
         .activity-content {
@@ -332,22 +287,13 @@ const AdminDashboard = () => {
 
         .activity-content p {
           margin: 0;
-          color: #333;
         }
 
-        .activity-content p:first-child {
-          font-weight: 600;
-          margin-bottom: 3px;
-        }
-
-        .activity-meta {
+        .activity-meta,
+        .activity-time,
+        .chart-label {
           font-size: 12px;
-          color: #666;
-        }
-
-        .activity-time {
-          font-size: 12px;
-          color: #999;
+          color: var(--color-muted);
         }
 
         .revenue-chart {
@@ -356,43 +302,20 @@ const AdminDashboard = () => {
           gap: 15px;
         }
 
-        .chart-item {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
         .chart-bar {
           height: 30px;
-          background: #f0f0f0;
-          border-radius: 5px;
+          background: var(--color-primary-soft);
+          border-radius: 6px;
           overflow: hidden;
+          margin-bottom: 8px;
         }
 
         .bar-segment {
           height: 100%;
-          border-radius: 5px;
         }
 
-        .chart-label {
-          font-size: 13px;
-          color: #666;
-        }
-
-        .verification-section,
-        .tools-section {
-          background: white;
-          padding: 30px;
-          border-radius: 10px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-          margin-bottom: 30px;
-        }
-
-        .verification-section h2,
-        .tools-section h2 {
-          margin: 0 0 20px 0;
-          font-size: 20px;
-          color: #333;
+        .verification-table {
+          overflow-x: auto;
         }
 
         .verification-table table {
@@ -403,100 +326,70 @@ const AdminDashboard = () => {
         .verification-table th {
           text-align: left;
           padding: 12px;
-          background: #f5f5f5;
-          border-bottom: 2px solid #eee;
-          font-weight: 600;
-          color: #666;
+          background: var(--color-primary-soft);
+          border-bottom: 2px solid var(--color-border);
+          font-weight: 800;
+          color: var(--color-muted);
           font-size: 12px;
         }
 
         .verification-table td {
           padding: 12px;
-          border-bottom: 1px solid #eee;
+          border-bottom: 1px solid var(--color-border);
         }
 
         .badge {
           padding: 6px 12px;
           border-radius: 20px;
           font-size: 12px;
-          font-weight: 600;
-          color: white;
-        }
-
-        .badge.pending {
-          background: #ffc107;
+          font-weight: 800;
+          color: #8a5a00;
+          background: #fff2bd;
         }
 
         .btn-small {
-          padding: 6px 12px;
+          padding: 7px 12px;
           border: none;
-          border-radius: 4px;
+          border-radius: 6px;
           cursor: pointer;
           font-size: 12px;
           margin-right: 5px;
-          font-weight: 600;
-          transition: all 0.3s;
+          font-weight: 800;
         }
 
         .btn-small.approve {
-          background: #28a745;
+          background: var(--color-success);
           color: white;
-        }
-
-        .btn-small.approve:hover {
-          background: #218838;
         }
 
         .btn-small.reject {
-          background: #dc3545;
+          background: var(--color-danger);
           color: white;
-        }
-
-        .btn-small.reject:hover {
-          background: #c82333;
         }
 
         .tools-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 15px;
+          gap: 14px;
         }
 
         .tool-btn {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: var(--color-primary);
           color: white;
           border: none;
-          padding: 20px;
+          padding: 18px;
           border-radius: 8px;
           cursor: pointer;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 10px;
-          font-weight: 600;
-          font-size: 13px;
-          transition: transform 0.3s;
+          font-weight: 800;
         }
 
         .tool-btn:hover {
-          transform: translateY(-5px);
-        }
-
-        .tool-btn span:first-child {
-          font-size: 28px;
+          background: var(--color-primary-hover);
         }
 
         @media (max-width: 768px) {
-          .metrics-grid {
-            grid-template-columns: 1fr;
-          }
-
           .section-row {
             grid-template-columns: 1fr;
-          }
-
-          .tools-grid {
-            grid-template-columns: repeat(2, 1fr);
           }
         }
       `}</style>

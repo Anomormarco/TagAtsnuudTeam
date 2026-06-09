@@ -1,6 +1,6 @@
-const paymentRepository = require('./payment.repository');
-const { PAYMENT_METHODS, PAYMENT_STATUSES } = require('./payment.model');
-const { PAYOUT_STATUSES } = require('../owner-payouts/ownerPayout.model');
+const paymentRepository = require('../repositories/payment.repository');
+const { PAYMENT_METHODS, PAYMENT_STATUSES } = require('../models/payment.model');
+const { PAYOUT_STATUSES } = require('../models/ownerPayout.model');
 const cache = require('../utils/cache');
 const { calculateCommission, money } = require('../utils/commission');
 const createHttpError = require('../utils/httpError');

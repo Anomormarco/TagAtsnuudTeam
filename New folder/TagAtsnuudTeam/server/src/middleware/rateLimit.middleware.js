@@ -6,10 +6,14 @@ try {
   ipKeyGenerator = expressRateLimit.ipKeyGenerator;
   rateLimit = expressRateLimit.rateLimit;
 } catch (error) {
-  rateLimit = ({ windowMs, max, keyGenerator, message }) => {
+  rateLimit = ({ windowMs, max, keyGenerator, message, skip }) => {
     const hits = new Map();
 
     return (req, res, next) => {
+      if (skip?.(req)) {
+        return next();
+      }
+
       const key = keyGenerator ? keyGenerator(req) : req.ip;
       const now = Date.now();
       const current = hits.get(key);
@@ -30,9 +34,23 @@ try {
   };
 }
 
+const isLocalRequest = (req) => {
+  const ip = req.ip || req.socket?.remoteAddress || "";
+  const host = req.hostname || "";
+
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    ip === "::1" ||
+    ip === "127.0.0.1" ||
+    ip === "::ffff:127.0.0.1"
+  );
+};
+
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
+  skip: isLocalRequest,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -44,6 +62,7 @@ const globalLimiter = rateLimit({
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  skip: isLocalRequest,
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
@@ -56,6 +75,7 @@ const authLimiter = rateLimit({
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
+  skip: isLocalRequest,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => req.headers["x-api-key"] || ipKeyGenerator(req.ip),

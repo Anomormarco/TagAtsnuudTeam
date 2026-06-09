@@ -2,10 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import TokenManager from '../utils/tokenManager';
 
-/**
- * Header Navigation Component
- * Modern responsive header with navigation, search, user menu
- */
 const Header = ({ user, setUser }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,49 +34,40 @@ const Header = ({ user, setUser }) => {
       <div className="header-container">
         <div className="logo">
           <Link to="/">
-            <span className="logo-icon">🏛️</span>
-            <span className="logo-text">HallBook</span>
+            <span className="logo-icon">Z</span>
+            <span className="logo-text">Заал</span>
           </Link>
         </div>
 
         <form className="search-box" onSubmit={handleSearch}>
           <input
             type="text"
-            placeholder="Search halls..."
+            placeholder="Заалнаас хайх..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button type="submit">🔍</button>
+          <button type="submit">Хайх</button>
         </form>
 
         <nav className="nav-links">
-          <Link to="/" className="nav-link">Halls</Link>
+          <Link to="/" className="nav-link">Заалууд</Link>
           {user ? (
             <>
-              <Link to="/bookings" className="nav-link">My Bookings</Link>
+              <Link to="/bookings" className="nav-link">Миний захиалга</Link>
               <div className="user-menu">
-                <button 
-                  className="user-button"
-                  onClick={() => setShowMenu(!showMenu)}
-                >
-                  👤 {user.name}
+                <button className="user-button" onClick={() => setShowMenu(!showMenu)}>
+                  {user.name}
                 </button>
                 {showMenu && (
                   <div className="dropdown-menu">
-                    <Link to="/profile" className="menu-item">Profile</Link>
+                    <Link to="/profile" className="menu-item">Профайл</Link>
                     {(user.role === 'owner' || user.role === 'admin') && (
-                      <button 
-                        className="menu-item"
-                        onClick={handleDashboardClick}
-                      >
-                        Dashboard
+                      <button className="menu-item" onClick={handleDashboardClick}>
+                        Самбар
                       </button>
                     )}
-                    <button 
-                      className="menu-item logout"
-                      onClick={handleLogout}
-                    >
-                      Logout
+                    <button className="menu-item logout" onClick={handleLogout}>
+                      Гарах
                     </button>
                   </div>
                 )}
@@ -88,8 +75,8 @@ const Header = ({ user, setUser }) => {
             </>
           ) : (
             <>
-              <Link to="/login" className="nav-link">Login</Link>
-              <Link to="/register" className="nav-link btn-primary">Register</Link>
+              <Link to="/login" className="nav-link">Нэвтрэх</Link>
+              <Link to="/register" className="nav-link btn-primary">Бүртгүүлэх</Link>
             </>
           )}
         </nav>
@@ -99,13 +86,14 @@ const Header = ({ user, setUser }) => {
 
       <style>{`
         .header {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          padding: 1rem 0;
+          background: var(--color-surface);
+          color: var(--color-text);
+          padding: 0.85rem 0;
           position: sticky;
           top: 0;
           z-index: 100;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+          border-bottom: 1px solid var(--color-border);
+          box-shadow: 0 6px 20px rgba(89, 48, 12, 0.06);
         }
 
         .header-container {
@@ -114,7 +102,7 @@ const Header = ({ user, setUser }) => {
           padding: 0 20px;
           display: flex;
           align-items: center;
-          gap: 30px;
+          gap: 24px;
           flex-wrap: wrap;
         }
 
@@ -127,78 +115,94 @@ const Header = ({ user, setUser }) => {
           align-items: center;
           gap: 10px;
           text-decoration: none;
-          color: white;
+          color: var(--color-text);
           font-size: 24px;
-          font-weight: bold;
+          font-weight: 800;
         }
 
         .logo-icon {
-          font-size: 28px;
+          width: 34px;
+          height: 34px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          background: var(--color-primary);
+          color: white;
+          font-size: 20px;
+          font-weight: 800;
         }
 
         .logo-text {
-          letter-spacing: 0.5px;
+          letter-spacing: 0;
         }
 
         .search-box {
           flex: 1;
-          min-width: 200px;
+          min-width: 240px;
           display: flex;
           gap: 8px;
-          background: rgba(255, 255, 255, 0.2);
-          padding: 8px 15px;
-          border-radius: 25px;
-          border: 1px solid rgba(255, 255, 255, 0.3);
+          background: var(--color-page);
+          padding: 8px;
+          border-radius: 8px;
+          border: 1px solid var(--color-border-strong);
         }
 
         .search-box input {
           flex: 1;
           background: transparent;
           border: none;
-          color: white;
+          color: var(--color-text);
           font-size: 14px;
           outline: none;
+          padding: 0 8px;
         }
 
         .search-box input::placeholder {
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--color-muted);
         }
 
         .search-box button {
-          background: none;
+          background: var(--color-primary);
           border: none;
           color: white;
           cursor: pointer;
-          font-size: 16px;
+          font-size: 14px;
+          font-weight: 700;
+          border-radius: 6px;
+          padding: 8px 14px;
         }
 
         .nav-links {
           display: flex;
           align-items: center;
-          gap: 20px;
+          gap: 10px;
           flex-wrap: wrap;
         }
 
         .nav-link {
-          color: white;
+          color: var(--color-text);
           text-decoration: none;
-          font-weight: 500;
+          font-weight: 600;
           padding: 8px 12px;
-          border-radius: 5px;
-          transition: background 0.3s;
+          border-radius: 6px;
+          transition: background 0.2s, color 0.2s;
         }
 
         .nav-link:hover {
-          background: rgba(255, 255, 255, 0.1);
+          background: var(--color-primary-soft);
+          color: var(--color-primary-hover);
         }
 
         .nav-link.btn-primary {
-          background: rgba(255, 255, 255, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.5);
+          background: var(--color-primary);
+          border: 1px solid var(--color-primary);
+          color: white;
         }
 
         .nav-link.btn-primary:hover {
-          background: rgba(255, 255, 255, 0.4);
+          background: var(--color-primary-hover);
+          color: white;
         }
 
         .user-menu {
@@ -206,18 +210,13 @@ const Header = ({ user, setUser }) => {
         }
 
         .user-button {
-          background: rgba(255, 255, 255, 0.2);
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          padding: 8px 15px;
-          border-radius: 20px;
+          background: var(--color-primary-soft);
+          color: var(--color-primary-hover);
+          border: 1px solid var(--color-border-strong);
+          padding: 8px 14px;
+          border-radius: 6px;
           cursor: pointer;
-          font-weight: 500;
-          transition: all 0.3s;
-        }
-
-        .user-button:hover {
-          background: rgba(255, 255, 255, 0.3);
+          font-weight: 700;
         }
 
         .dropdown-menu {
@@ -226,11 +225,12 @@ const Header = ({ user, setUser }) => {
           right: 0;
           background: white;
           border-radius: 8px;
-          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+          box-shadow: var(--shadow-card);
           margin-top: 8px;
           min-width: 180px;
           overflow: hidden;
           z-index: 200;
+          border: 1px solid var(--color-border);
         }
 
         .menu-item {
@@ -241,37 +241,32 @@ const Header = ({ user, setUser }) => {
           background: none;
           text-align: left;
           cursor: pointer;
-          color: #333;
+          color: var(--color-text);
           text-decoration: none;
-          transition: background 0.3s;
           font-size: 14px;
         }
 
         .menu-item:hover {
-          background: #f5f5f5;
+          background: var(--color-primary-soft);
         }
 
         .menu-item.logout {
-          color: #dc3545;
-          border-top: 1px solid #eee;
-        }
-
-        .menu-item.logout:hover {
-          background: #fff5f5;
+          color: var(--color-danger);
+          border-top: 1px solid var(--color-border);
         }
 
         .mobile-menu-btn {
           display: none;
           background: none;
           border: none;
-          color: white;
+          color: var(--color-primary);
           font-size: 24px;
           cursor: pointer;
         }
 
         @media (max-width: 768px) {
           .header-container {
-            gap: 15px;
+            gap: 12px;
           }
 
           .search-box {

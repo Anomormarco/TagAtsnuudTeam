@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const paymentService = require('./payment.service');
+const paymentService = require('../services/payment.service');
 const createHttpError = require('../utils/httpError');
 
 const getPayments = asyncHandler(async (req, res) => {

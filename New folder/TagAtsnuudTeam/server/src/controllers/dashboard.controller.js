@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const dashboardService = require('./dashboard.service');
+const dashboardService = require('../services/dashboard.service');
 const createHttpError = require('../utils/httpError');
 
 const getAdminDashboard = asyncHandler(async (req, res) => {

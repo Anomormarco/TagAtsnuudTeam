@@ -1,157 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import apiClient from '../utils/apiClient';
+import TokenManager from '../utils/tokenManager';
 
-/**
- * My Bookings Page
- * Shows user's bookings history and upcoming bookings
- */
 const MyBookingsPage = () => {
   const [bookings, setBookings] = useState([]);
   const [filter, setFilter] = useState('upcoming');
 
   useEffect(() => {
-    // Fetch bookings - Replace with API call
-    const mockBookings = [
-      {
-        id: 1,
-        hallName: 'Grand Ballroom',
-        date: '2024-06-15',
-        startTime: '18:00',
-        endTime: '22:00',
-        guestCount: 150,
-        status: 'confirmed',
-        totalPrice: 600000,
-        eventType: 'Wedding'
-      },
-      {
-        id: 2,
-        hallName: 'Business Hub',
-        date: '2024-05-20',
-        startTime: '09:00',
-        endTime: '12:00',
-        guestCount: 50,
-        status: 'completed',
-        totalPrice: 210000,
-        eventType: 'Conference'
-      },
-      {
-        id: 3,
-        hallName: 'Cozy Lounge',
-        date: '2024-04-10',
-        startTime: '19:00',
-        endTime: '23:00',
-        guestCount: 30,
-        status: 'cancelled',
-        totalPrice: 200000,
-        eventType: 'Birthday Party'
-      }
-    ];
-    setBookings(mockBookings);
+    const userId = TokenManager.getUser()?.id || 21;
+    apiClient.get('/bookings/my', { params: { userId } })
+      .then((response) => setBookings(response.data.data || []))
+      .catch(() => setBookings([]));
   }, []);
 
   const getStatusColor = (status) => {
-    switch(status) {
-      case 'confirmed': return '#28a745';
-      case 'completed': return '#667eea';
-      case 'cancelled': return '#dc3545';
-      case 'pending': return '#ffc107';
-      default: return '#6c757d';
-    }
+    if (status === 'PAID') return 'var(--color-success)';
+    if (status === 'COMPLETED') return 'var(--color-primary)';
+    if (status === 'CANCELLED') return 'var(--color-danger)';
+    return '#b88700';
   };
 
   const getStatusLabel = (status) => {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    if (status === 'PAID') return 'Төлөгдсөн';
+    if (status === 'COMPLETED') return 'Дууссан';
+    if (status === 'CANCELLED') return 'Цуцлагдсан';
+    if (status === 'PENDING') return 'Хүлээгдэж байна';
+    return 'Хүлээгдэж байна';
   };
 
-  const filteredBookings = bookings.filter(booking => {
-    const bookingDate = new Date(booking.date);
+  const filteredBookings = bookings.filter((booking) => {
+    const bookingDate = new Date(booking.start_time);
     const today = new Date();
-    
-    if (filter === 'upcoming') {
-      return bookingDate > today && booking.status === 'confirmed';
-    } else if (filter === 'past') {
-      return bookingDate <= today || booking.status === 'completed';
-    }
+    if (filter === 'upcoming') return bookingDate > today && booking.status !== 'CANCELLED';
+    if (filter === 'past') return bookingDate <= today || booking.status === 'COMPLETED';
     return true;
   });
 
   return (
     <div className="my-bookings-page">
       <div className="container">
-        <h1>My Bookings</h1>
+        <h1>Миний захиалга</h1>
 
-        {/* Filters */}
         <div className="filter-tabs">
-          <button
-            className={`filter-tab ${filter === 'upcoming' ? 'active' : ''}`}
-            onClick={() => setFilter('upcoming')}
-          >
-            📅 Upcoming
-          </button>
-          <button
-            className={`filter-tab ${filter === 'past' ? 'active' : ''}`}
-            onClick={() => setFilter('past')}
-          >
-            ✅ Past
-          </button>
-          <button
-            className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            📋 All
-          </button>
+          <button className={`filter-tab ${filter === 'upcoming' ? 'active' : ''}`} onClick={() => setFilter('upcoming')}>Ирэх захиалга</button>
+          <button className={`filter-tab ${filter === 'past' ? 'active' : ''}`} onClick={() => setFilter('past')}>Өнгөрсөн</button>
+          <button className={`filter-tab ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Бүгд</button>
         </div>
 
-        {/* Bookings List */}
         <div className="bookings-list">
           {filteredBookings.length === 0 ? (
-            <div className="empty-state">
-              <p>No bookings found</p>
-            </div>
+            <div className="empty-state"><p>Захиалга олдсонгүй</p></div>
           ) : (
-            filteredBookings.map(booking => (
+            filteredBookings.map((booking) => (
               <div key={booking.id} className="booking-card">
                 <div className="booking-header">
-                  <h3>{booking.hallName}</h3>
-                  <span 
-                    className="status-badge"
-                    style={{ backgroundColor: getStatusColor(booking.status) }}
-                  >
+                  <h3>{booking.hall_name}</h3>
+                  <span className="status-badge" style={{ backgroundColor: getStatusColor(booking.status) }}>
                     {getStatusLabel(booking.status)}
                   </span>
                 </div>
-
                 <div className="booking-details">
-                  <div className="detail-item">
-                    <strong>📅 Date:</strong>
-                    <span>{new Date(booking.date).toLocaleDateString()}</span>
-                  </div>
-                  <div className="detail-item">
-                    <strong>⏰ Time:</strong>
-                    <span>{booking.startTime} - {booking.endTime}</span>
-                  </div>
-                  <div className="detail-item">
-                    <strong>👥 Guests:</strong>
-                    <span>{booking.guestCount} people</span>
-                  </div>
-                  <div className="detail-item">
-                    <strong>🎊 Event:</strong>
-                    <span>{booking.eventType}</span>
-                  </div>
+                  <div className="detail-item"><strong>Огноо:</strong><span>{new Date(booking.start_time).toLocaleDateString()}</span></div>
+                  <div className="detail-item"><strong>Цаг:</strong><span>{new Date(booking.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(booking.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
+                  <div className="detail-item"><strong>Байршил:</strong><span>{booking.hall_location}</span></div>
+                  <div className="detail-item"><strong>Төлөв:</strong><span>{getStatusLabel(booking.status)}</span></div>
                 </div>
-
                 <div className="booking-footer">
-                  <div className="price">
-                    <span>Total:</span>
-                    <strong>₮{booking.totalPrice.toLocaleString()}</strong>
-                  </div>
+                  <div className="price"><span>Нийт:</span><strong>₮{Number(booking.total_price).toLocaleString()}</strong></div>
                   <div className="actions">
-                    <button className="btn-secondary">View Details</button>
-                    {booking.status === 'confirmed' && (
-                      <>
-                        <button className="btn-primary">Modify</button>
-                        <button className="btn-danger">Cancel</button>
-                      </>
-                    )}
+                    <button className="btn-secondary">Дэлгэрэнгүй</button>
+                    {booking.status !== 'CANCELLED' && <button className="btn-danger">Цуцлах</button>}
                   </div>
                 </div>
               </div>
@@ -163,7 +81,7 @@ const MyBookingsPage = () => {
       <style>{`
         .my-bookings-page {
           padding: 30px 0;
-          background: #f8f9fa;
+          background: var(--color-page);
           min-height: calc(100vh - 200px);
         }
 
@@ -175,99 +93,88 @@ const MyBookingsPage = () => {
 
         .my-bookings-page h1 {
           font-size: 28px;
-          color: #333;
-          margin-bottom: 30px;
+          color: var(--color-text);
+          margin-bottom: 24px;
         }
 
         .filter-tabs {
           display: flex;
           gap: 10px;
-          margin-bottom: 30px;
+          margin-bottom: 24px;
+          flex-wrap: wrap;
         }
 
         .filter-tab {
-          padding: 10px 20px;
-          border: 2px solid #ddd;
+          padding: 10px 16px;
+          border: 1px solid var(--color-border-strong);
           background: white;
-          border-radius: 5px;
+          border-radius: 6px;
           cursor: pointer;
-          font-weight: 500;
-          color: #666;
-          transition: all 0.3s;
+          font-weight: 800;
+          color: var(--color-muted);
         }
 
+        .filter-tab.active,
         .filter-tab:hover {
-          border-color: #667eea;
-          color: #667eea;
-        }
-
-        .filter-tab.active {
-          background: #667eea;
-          border-color: #667eea;
+          background: var(--color-primary);
+          border-color: var(--color-primary);
           color: white;
         }
 
         .bookings-list {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 18px;
         }
 
         .booking-card {
           background: white;
           padding: 20px;
-          border-radius: 10px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-          transition: box-shadow 0.3s;
-        }
-
-        .booking-card:hover {
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+          border-radius: 8px;
+          box-shadow: var(--shadow-card);
+          border: 1px solid var(--color-border);
         }
 
         .booking-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 20px;
-          border-bottom: 2px solid #f5f5f5;
+          margin-bottom: 18px;
+          border-bottom: 1px solid var(--color-border);
           padding-bottom: 12px;
+          gap: 12px;
         }
 
         .booking-header h3 {
           margin: 0;
-          color: #333;
+          color: var(--color-text);
           font-size: 18px;
         }
 
         .status-badge {
-          padding: 6px 14px;
+          padding: 6px 12px;
           color: white;
           border-radius: 20px;
           font-size: 12px;
-          font-weight: 600;
+          font-weight: 800;
         }
 
         .booking-details {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 15px;
-          margin-bottom: 20px;
+          gap: 14px;
+          margin-bottom: 18px;
         }
 
         .detail-item {
           display: flex;
           justify-content: space-between;
+          gap: 10px;
           font-size: 14px;
         }
 
         .detail-item strong {
-          color: #667eea;
-          margin-right: 8px;
-        }
-
-        .detail-item span {
-          color: #333;
+          color: var(--color-primary-hover);
         }
 
         .booking-footer {
@@ -275,87 +182,60 @@ const MyBookingsPage = () => {
           justify-content: space-between;
           align-items: center;
           padding-top: 15px;
-          border-top: 1px solid #f5f5f5;
+          border-top: 1px solid var(--color-border);
+          gap: 12px;
         }
 
         .price {
           display: flex;
           align-items: center;
           gap: 10px;
-          font-weight: 600;
+          font-weight: 800;
         }
 
         .price strong {
-          color: #667eea;
+          color: var(--color-primary-hover);
           font-size: 18px;
         }
 
         .actions {
           display: flex;
           gap: 8px;
+          flex-wrap: wrap;
         }
 
         .btn-secondary,
-        .btn-primary,
         .btn-danger {
-          padding: 8px 16px;
+          padding: 8px 14px;
           border: none;
-          border-radius: 5px;
+          border-radius: 6px;
           font-size: 13px;
-          font-weight: 500;
+          font-weight: 800;
           cursor: pointer;
-          transition: all 0.3s;
         }
 
         .btn-secondary {
-          background: #f5f5f5;
-          color: #333;
-          border: 1px solid #ddd;
-        }
-
-        .btn-secondary:hover {
-          background: #ececec;
-        }
-
-        .btn-primary {
-          background: #667eea;
-          color: white;
-        }
-
-        .btn-primary:hover {
-          background: #5568d3;
+          background: var(--color-primary-soft);
+          color: var(--color-primary-hover);
         }
 
         .btn-danger {
-          background: #dc3545;
+          background: var(--color-danger);
           color: white;
-        }
-
-        .btn-danger:hover {
-          background: #c82333;
         }
 
         .empty-state {
           text-align: center;
           padding: 60px 20px;
-          color: #999;
+          color: var(--color-muted);
           font-size: 18px;
         }
 
         @media (max-width: 768px) {
-          .booking-details {
-            grid-template-columns: 1fr 1fr;
-          }
-
-          .booking-footer {
+          .booking-footer,
+          .booking-header {
             flex-direction: column;
-            gap: 15px;
             align-items: flex-start;
-          }
-
-          .actions {
-            width: 100%;
-            flex-wrap: wrap;
           }
         }
       `}</style>

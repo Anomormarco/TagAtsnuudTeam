@@ -35,17 +35,17 @@ const RegisterPage = () => {
     const passwordRegex = /^.{8,}$/;
 
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      setError('All fields are required');
+      setError('Бүх талбарыг бөглөнө үү');
       return false;
     }
 
     if (!passwordRegex.test(formData.password)) {
-      setError('Password must be at least 8 characters');
+      setError('Нууц үг хамгийн багадаа 8 тэмдэгт байна');
       return false;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('Нууц үг таарахгүй байна');
       return false;
     }
 
@@ -75,7 +75,7 @@ const RegisterPage = () => {
 
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || 'Бүртгүүлэхэд алдаа гарлаа');
     } finally {
       setLoading(false);
     }
@@ -84,70 +84,70 @@ const RegisterPage = () => {
   return (
     <div className="register-container">
       <div className="register-box">
-        <h1>Register</h1>
+        <h1>Бүртгүүлэх</h1>
 
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="name">Full Name</label>
+            <label htmlFor="name">Овог нэр</label>
             <input
               type="text"
               id="name"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Enter your full name"
+              placeholder="Овог нэрээ оруулна уу"
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Имэйл</label>
             <input
               type="email"
               id="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your email"
+              placeholder="Имэйл хаягаа оруулна уу"
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">Нууц үг</label>
             <input
               type="password"
               id="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter password (min 8 chars)"
+              placeholder="8-аас дээш тэмдэгттэй нууц үг"
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">Нууц үг давтах</label>
             <input
               type="password"
               id="confirmPassword"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              placeholder="Confirm your password"
+              placeholder="Нууц үгээ давтан оруулна уу"
               required
             />
           </div>
 
           <button type="submit" disabled={loading}>
-            {loading ? 'Registering...' : 'Register'}
+            {loading ? 'Бүртгэж байна...' : 'Бүртгүүлэх'}
           </button>
         </form>
 
         <p className="login-link">
-          Already have an account? <Link to="/login">Login here</Link>
+          Бүртгэлтэй юу? <Link to="/login">Энд нэвтэрнэ үү</Link>
         </p>
       </div>
 
@@ -157,7 +157,7 @@ const RegisterPage = () => {
           justify-content: center;
           align-items: center;
           min-height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #f7941d 0%, #e86f1b 55%, #b95613 100%);
           padding: 20px;
         }
 
@@ -173,7 +173,7 @@ const RegisterPage = () => {
         .register-box h1 {
           text-align: center;
           margin-bottom: 30px;
-          color: #333;
+          color: var(--color-text);
         }
 
         .error-message {
@@ -192,14 +192,14 @@ const RegisterPage = () => {
         .form-group label {
           display: block;
           margin-bottom: 8px;
-          color: #333;
+          color: var(--color-text);
           font-weight: 500;
         }
 
         .form-group input {
           width: 100%;
           padding: 10px;
-          border: 1px solid #ddd;
+          border: 1px solid var(--color-border-strong);
           border-radius: 5px;
           font-size: 14px;
           box-sizing: border-box;
@@ -207,14 +207,14 @@ const RegisterPage = () => {
 
         .form-group input:focus {
           outline: none;
-          border-color: #667eea;
-          box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+          border-color: var(--color-primary);
+          box-shadow: 0 0 0 3px rgba(232, 111, 27, 0.14);
         }
 
         button {
           width: 100%;
           padding: 12px;
-          background-color: #667eea;
+          background-color: var(--color-primary);
           color: white;
           border: none;
           border-radius: 5px;
@@ -225,7 +225,7 @@ const RegisterPage = () => {
         }
 
         button:hover {
-          background-color: #5568d3;
+          background-color: var(--color-primary-hover);
         }
 
         button:disabled {
@@ -236,11 +236,11 @@ const RegisterPage = () => {
         .login-link {
           text-align: center;
           margin-top: 20px;
-          color: #666;
+          color: var(--color-muted);
         }
 
         .login-link a {
-          color: #667eea;
+          color: var(--color-primary);
           text-decoration: none;
           font-weight: 600;
         }

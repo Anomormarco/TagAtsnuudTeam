@@ -5,18 +5,32 @@ require("./src/config/env").loadEnv();
 const authRoutes = require("./src/routes/auth.routes");
 const hallRoutes = require("./src/routes/hall.routes");
 const categoryRoutes = require("./src/routes/category.routes");
+const bookingRoutes = require("./src/routes/bookingRoutes");
+const reviewRoutes = require("./src/routes/reviewRoutes");
 const db = require("./src/config/db");
 const { globalLimiter, authLimiter, apiLimiter } = require("./src/middleware/rateLimit.middleware");
 const { notFound, errorHandler } = require("./src/middleware/error.middleware");
 const { sendSuccess } = require("./src/utils/response");
 const paymentController = require('./src/controllers/payment.controller');
 const paymentRoutes = require('./src/routes/payment.routes');
+const dashboardRoutes = require('./src/routes/dashboard.routes');
 const v2Routes = require('./src/routes/v2.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || true, credentials: true }));
+const corsOptions = {
+  origin(origin, callback) {
+    const configuredOrigin = process.env.CORS_ORIGIN;
+    if (configuredOrigin && configuredOrigin !== "*") {
+      return callback(null, configuredOrigin);
+    }
+    return callback(null, origin || true);
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.post(
   '/api/v1/payments/stripe/webhook',
   express.raw({ type: 'application/json' }),
@@ -47,6 +61,11 @@ app.get("/api/v1/health", (req, res) => {
 
 app.use("/api/v1/halls", hallRoutes);
 app.use("/api/v1/categories", categoryRoutes);
+app.use("/api/v1/bookings", bookingRoutes);
+app.use("/api/v1/halls/:hallId/reviews", reviewRoutes);
+app.use("/api/v1/payments", paymentRoutes);
+app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v2", v2Routes);
 
 app.get("/api/v2", (req, res) => {
   sendSuccess(res, { version: "v2", status: "placeholder" }, "API v2 дараа нэмэгдэнэ");

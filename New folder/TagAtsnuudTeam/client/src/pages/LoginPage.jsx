@@ -26,7 +26,7 @@ const LoginPage = () => {
 
     try {
       if (!email || !password) {
-        setError('Email and password are required');
+        setError('Имэйл болон нууц үг заавал оруулна уу');
         setLoading(false);
         return;
       }
@@ -41,7 +41,7 @@ const LoginPage = () => {
 
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      setError(err.response?.data?.message || 'Нэвтрэхэд алдаа гарлаа');
     } finally {
       setLoading(false);
     }
@@ -50,42 +50,42 @@ const LoginPage = () => {
   return (
     <div className="login-container">
       <div className="login-box">
-        <h1>Login</h1>
+        <h1>Нэвтрэх</h1>
         
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Имэйл</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
+              placeholder="Имэйл хаягаа оруулна уу"
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">Нууц үг</label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder="Нууц үгээ оруулна уу"
               required
             />
           </div>
 
           <button type="submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Нэвтэрч байна...' : 'Нэвтрэх'}
           </button>
         </form>
 
         <p className="signup-link">
-          Don't have an account? <Link to="/register">Register here</Link>
+          Бүртгэлгүй юу? <Link to="/register">Энд бүртгүүлнэ үү</Link>
         </p>
       </div>
 
@@ -95,7 +95,7 @@ const LoginPage = () => {
           justify-content: center;
           align-items: center;
           height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #f7941d 0%, #e86f1b 55%, #b95613 100%);
         }
 
         .login-box {
@@ -110,7 +110,7 @@ const LoginPage = () => {
         .login-box h1 {
           text-align: center;
           margin-bottom: 30px;
-          color: #333;
+          color: var(--color-text);
         }
 
         .error-message {
@@ -129,14 +129,14 @@ const LoginPage = () => {
         .form-group label {
           display: block;
           margin-bottom: 8px;
-          color: #333;
+          color: var(--color-text);
           font-weight: 500;
         }
 
         .form-group input {
           width: 100%;
           padding: 10px;
-          border: 1px solid #ddd;
+          border: 1px solid var(--color-border-strong);
           border-radius: 5px;
           font-size: 14px;
           box-sizing: border-box;
@@ -144,14 +144,14 @@ const LoginPage = () => {
 
         .form-group input:focus {
           outline: none;
-          border-color: #667eea;
-          box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+          border-color: var(--color-primary);
+          box-shadow: 0 0 0 3px rgba(232, 111, 27, 0.14);
         }
 
         button {
           width: 100%;
           padding: 12px;
-          background-color: #667eea;
+          background-color: var(--color-primary);
           color: white;
           border: none;
           border-radius: 5px;
@@ -162,7 +162,7 @@ const LoginPage = () => {
         }
 
         button:hover {
-          background-color: #5568d3;
+          background-color: var(--color-primary-hover);
         }
 
         button:disabled {
@@ -173,11 +173,11 @@ const LoginPage = () => {
         .signup-link {
           text-align: center;
           margin-top: 20px;
-          color: #666;
+          color: var(--color-muted);
         }
 
         .signup-link a {
-          color: #667eea;
+          color: var(--color-primary);
           text-decoration: none;
           font-weight: 600;
         }

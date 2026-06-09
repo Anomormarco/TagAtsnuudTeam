@@ -1,21 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-/**
- * Not Found Page (404)
- * Displayed when user navigates to non-existent routes
- */
 const NotFoundPage = () => {
   return (
     <div className="not-found-page">
       <div className="container">
         <div className="content">
           <h1>404</h1>
-          <h2>Page Not Found</h2>
-          <p>Sorry, the page you're looking for doesn't exist.</p>
-          <Link to="/" className="home-link">
-            ← Back to Home
-          </Link>
+          <h2>Хуудас олдсонгүй</h2>
+          <p>Таны хайсан хуудас байхгүй эсвэл шилжсэн байна.</p>
+          <Link to="/" className="home-link">Нүүр рүү буцах</Link>
         </div>
       </div>
 
@@ -25,7 +19,7 @@ const NotFoundPage = () => {
           align-items: center;
           justify-content: center;
           min-height: calc(100vh - 200px);
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #f7941d 0%, #e86f1b 55%, #b95613 100%);
         }
 
         .container {
@@ -44,36 +38,29 @@ const NotFoundPage = () => {
         .content h1 {
           font-size: 120px;
           margin: 0;
-          font-weight: 700;
-          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+          font-weight: 800;
         }
 
         .content h2 {
           font-size: 32px;
           margin: 10px 0 15px 0;
-          font-weight: 600;
+          font-weight: 800;
         }
 
         .content p {
           font-size: 18px;
           margin: 0 0 30px 0;
-          opacity: 0.9;
+          color: white;
         }
 
         .home-link {
           display: inline-block;
           background: white;
-          color: #667eea;
+          color: var(--color-primary-hover);
           padding: 12px 30px;
-          border-radius: 5px;
+          border-radius: 6px;
           text-decoration: none;
-          font-weight: 600;
-          transition: all 0.3s;
-        }
-
-        .home-link:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+          font-weight: 800;
         }
 
         @media (max-width: 768px) {
@@ -83,10 +70,6 @@ const NotFoundPage = () => {
 
           .content h2 {
             font-size: 24px;
-          }
-
-          .content p {
-            font-size: 16px;
           }
         }
       `}</style>

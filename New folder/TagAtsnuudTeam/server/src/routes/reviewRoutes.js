@@ -1,10 +1,13 @@
-import express from "express"; // Express router үүсгэхэд ашиглана.
-import expressAsyncHandler from "express-async-handler"; // Async контроллеруудын алдааг next рүү дамжуулахад ашиглана.
-import { createReviewController, getReviewsController } from "../controllers/bookingController.js"; // Review controller-үүдийг import хийнэ.
+const express = require("express");
+const asyncHandler = require("express-async-handler");
+const {
+  createReviewController,
+  getReviewsController,
+} = require("../controllers/bookingController");
 
-const router = express.Router({ mergeParams: true }); // mergeParams=True бол parent route-ийн params-г ашиглаж болно.
+const router = express.Router({ mergeParams: true });
 
-router.post("/", expressAsyncHandler(createReviewController)); // Booking-ийн review нэмэх POST endpoint.
-router.get("/", expressAsyncHandler(getReviewsController)); // Booking-ийн review-үүдийг авах GET endpoint.
+router.post("/", asyncHandler(createReviewController));
+router.get("/", asyncHandler(getReviewsController));
 
-export default router; // Router-ийг экспортлож server-д ашиглана.
+module.exports = router;

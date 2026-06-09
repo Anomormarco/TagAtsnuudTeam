@@ -34,7 +34,7 @@ function App() {
   }, []);
 
   if (isLoading) {
-    return <div className="loading-screen">Loading...</div>;
+    return <div className="loading-screen">Ачаалж байна...</div>;
   }
 
   return (
@@ -123,7 +123,7 @@ function App() {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            background-color: #f8f9fa;
+            background-color: var(--color-page);
           }
 
           .main-content {
@@ -138,7 +138,7 @@ function App() {
             align-items: center;
             height: 100vh;
             font-size: 24px;
-            color: #667eea;
+            color: var(--color-primary);
             font-weight: 600;
           }
         `}</style>

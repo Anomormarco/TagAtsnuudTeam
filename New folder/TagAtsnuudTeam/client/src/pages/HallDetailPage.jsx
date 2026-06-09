@@ -1,390 +1,438 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import apiClient from '../utils/apiClient';
 
-/**
- * Hall Detail Page
- * Shows detailed information about a specific hall
- */
 const HallDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [hall, setHall] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
-    // Fetch hall details - Replace with API call
-    setTimeout(() => {
-      const mockHall = {
-        id: id,
-        name: 'Grand Ballroom',
-        category: 'luxury',
-        image: '🏢',
-        location: 'Sukhbaatar District',
-        capacity: 500,
-        pricePerHour: 150000,
-        rating: 4.8,
-        reviews: 125,
-        description: 'Elegant ballroom perfect for weddings and large events',
-        amenities: [
-          '🎤 Sound System',
-          '💡 Professional Lighting',
-          '🎬 Projector & Screen',
-          '🍽️ Catering Available',
-          '🚗 Parking (200 spaces)',
-          '🛗 Elevators',
-          '🎨 Customizable Decor',
-          '🔒 Security 24/7'
-        ],
-        gallery: ['🏢', '🎊', '💒', '✨'],
-        policies: {
-          cancellation: 'Free cancellation up to 7 days before booking',
-          deposit: '30% deposit required at booking',
-          payment: 'Full payment due 3 days before event'
-        },
-        reviews: [
-          { author: 'John Smith', rating: 5, text: 'Perfect venue for our wedding!', date: '2024-05-15' },
-          { author: 'Sarah Johnson', rating: 4, text: 'Great facilities and staff', date: '2024-04-20' }
-        ]
-      };
-      setHall(mockHall);
+    const loadHall = async () => {
+      setLoading(true);
+      const [hallResponse, reviewsResponse] = await Promise.all([
+        apiClient.get(`/halls/${id}`),
+        apiClient.get(`/halls/${id}/reviews`),
+      ]);
+      setHall(hallResponse.data.data);
+      setReviews(reviewsResponse.data.data || []);
+      setSelectedImageIndex(0);
       setLoading(false);
-    }, 300);
+    };
+
+    loadHall().catch(() => {
+      setHall(null);
+      setReviews([]);
+      setLoading(false);
+    });
   }, [id]);
 
-  if (loading) {
-    return <div className="loading-page">Loading hall details...</div>;
-  }
+  const galleryImages = useMemo(() => {
+    if (!hall) return [];
 
-  if (!hall) {
-    return <div className="error-page">Hall not found</div>;
-  }
+    const images = Array.isArray(hall.images) ? hall.images : [];
+    const normalizedImages = images
+      .map((image, index) => ({
+        id: image.id || `image-${index}`,
+        imageUrl: image.imageUrl || image.image_url,
+        altText: image.altText || image.alt_text || hall.name,
+        sortOrder: image.sortOrder ?? image.sort_order ?? index,
+      }))
+      .filter((image) => image.imageUrl)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+
+    if (normalizedImages.length) {
+      return normalizedImages;
+    }
+
+    return hall.imageUrl ? [{ id: 'main', imageUrl: hall.imageUrl, altText: hall.name, sortOrder: 0 }] : [];
+  }, [hall]);
+
+  const selectedImage = galleryImages[selectedImageIndex] || galleryImages[0];
+  const hasMultipleImages = galleryImages.length > 1;
+
+  const showPreviousImage = () => {
+    setSelectedImageIndex((currentIndex) =>
+      currentIndex === 0 ? galleryImages.length - 1 : currentIndex - 1
+    );
+  };
+
+  const showNextImage = () => {
+    setSelectedImageIndex((currentIndex) =>
+      currentIndex === galleryImages.length - 1 ? 0 : currentIndex + 1
+    );
+  };
+
+  if (loading) return <div className="loading-page">Заалын мэдээлэл ачаалж байна...</div>;
+  if (!hall) return <div className="error-page">Заал олдсонгүй</div>;
 
   return (
     <div className="hall-detail-page">
       <div className="container">
-        {/* Back Button */}
-        <button className="back-btn" onClick={() => navigate(-1)}>← Back</button>
+        <button className="back-btn" onClick={() => navigate(-1)}>Буцах</button>
 
         <div className="detail-layout">
-          {/* Left Column - Images & Info */}
-          <div className="left-column">
-            <div className="main-image">{hall.image}</div>
-            <div className="gallery">
-              {hall.gallery.map((img, idx) => (
-                <div key={idx} className="gallery-img">{img}</div>
-              ))}
-            </div>
-          </div>
+          <div className="gallery">
+            <div className="main-image">
+              {selectedImage?.imageUrl ? (
+                <img src={selectedImage.imageUrl} alt={selectedImage.altText || hall.name} />
+              ) : (
+                <span>Заал</span>
+              )}
 
-          {/* Right Column - Details & Booking */}
-          <div className="right-column">
-            <div className="header-section">
-              <h1>{hall.name}</h1>
-              <div className="meta">
-                <span className="rating">⭐ {hall.rating} ({hall.reviews} reviews)</span>
-                <span className="location">📍 {hall.location}</span>
-              </div>
-            </div>
-
-            <div className="price-section">
-              <span className="price">₮{hall.pricePerHour.toLocaleString()}</span>
-              <span className="unit">per hour</span>
+              {hasMultipleImages && (
+                <>
+                  <button className="gallery-nav prev" type="button" aria-label="Өмнөх зураг" onClick={showPreviousImage}>
+                    ‹
+                  </button>
+                  <button className="gallery-nav next" type="button" aria-label="Дараагийн зураг" onClick={showNextImage}>
+                    ›
+                  </button>
+                  <span className="image-count">
+                    {selectedImageIndex + 1} / {galleryImages.length}
+                  </span>
+                </>
+              )}
             </div>
 
-            <div className="description-section">
-              <h3>About</h3>
-              <p>{hall.description}</p>
-              <div className="capacity">
-                <strong>Capacity:</strong> Up to {hall.capacity} people
-              </div>
-            </div>
-
-            <div className="amenities-section">
-              <h3>Amenities</h3>
-              <div className="amenities-grid">
-                {hall.amenities.map((amenity, idx) => (
-                  <div key={idx} className="amenity">
-                    {amenity}
-                  </div>
+            {hasMultipleImages && (
+              <div className="thumb-strip">
+                {galleryImages.map((image, index) => (
+                  <button
+                    key={image.id}
+                    type="button"
+                    className={index === selectedImageIndex ? 'active' : ''}
+                    onClick={() => setSelectedImageIndex(index)}
+                    aria-label={`Зураг ${index + 1}`}
+                  >
+                    <img src={image.imageUrl} alt={image.altText || `${hall.name} зураг ${index + 1}`} />
+                  </button>
                 ))}
               </div>
-            </div>
-
-            <div className="policies-section">
-              <h3>Booking Policies</h3>
-              <ul>
-                <li><strong>Cancellation:</strong> {hall.policies.cancellation}</li>
-                <li><strong>Deposit:</strong> {hall.policies.deposit}</li>
-                <li><strong>Payment:</strong> {hall.policies.payment}</li>
-              </ul>
-            </div>
-
-            <Link to={`/booking/${hall.id}`} className="book-btn">
-              Book Now
-            </Link>
+            )}
           </div>
+
+          <aside className="booking-card">
+            <span className="category">{(hall.categories || []).map((category) => category.name).join(', ') || 'Заал'}</span>
+            <h1>{hall.name}</h1>
+            <p className="location">{hall.location}</p>
+            <div className="rating">★ {hall.rating || 0} · {hall.reviewCount || reviews.length} сэтгэгдэл</div>
+            <p className="price">₮{Number(hall.pricePerHour).toLocaleString()} / цаг</p>
+            <div className="capacity">Багтаамж: {hall.capacity} хүн</div>
+            <button className="book-btn" onClick={() => navigate(`/booking/${hall.id}`)}>Захиалах</button>
+          </aside>
         </div>
 
-        {/* Reviews Section */}
-        <div className="reviews-section">
-          <h2>Guest Reviews</h2>
-          <div className="reviews-list">
-            {hall.reviews.map((review, idx) => (
-              <div key={idx} className="review">
-                <div className="review-header">
-                  <strong>{review.author}</strong>
-                  <span className="review-rating">{'⭐'.repeat(review.rating)}</span>
+        <section className="info-section">
+          <h2>Тайлбар</h2>
+          <p>{hall.description}</p>
+        </section>
+
+        <section className="info-section">
+          <h2>Боломжууд</h2>
+          <div className="amenities">
+            {(hall.categories || []).map((item) => <span key={item.id}>{item.name}</span>)}
+            <span>{hall.status === 'AVAILABLE' ? 'Захиалах боломжтой' : hall.status}</span>
+          </div>
+        </section>
+
+        <section className="info-section">
+          <h2>Захиалгын нөхцөл</h2>
+          <ul>
+            <li><strong>Цуцлалт:</strong> Захиалгын цагаас 24 цагийн өмнө цуцлах боломжтой.</li>
+            <li><strong>Төлбөр:</strong> Захиалга баталгаажуулахад 30% урьдчилгаа төлнө.</li>
+          </ul>
+        </section>
+
+        <section className="info-section">
+          <h2>Сэтгэгдэл</h2>
+          <div className="reviews">
+            {reviews.length ? (
+              reviews.map((review) => (
+                <div className="review-card" key={review.id}>
+                  <div className="review-head">
+                    <strong>{review.userName || `Хэрэглэгч #${review.userId}`}</strong>
+                    <span>★ {review.rating}</span>
+                  </div>
+                  <p>{review.comment}</p>
+                  <small>{new Date(review.createdAt).toLocaleDateString()}</small>
                 </div>
-                <p className="review-text">{review.text}</p>
-                <span className="review-date">{new Date(review.date).toLocaleDateString()}</span>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="empty-text">Одоогоор сэтгэгдэл алга.</p>
+            )}
           </div>
-        </div>
+        </section>
       </div>
 
       <style>{`
-        .loading-page, .error-page {
-          text-align: center;
-          padding: 60px 20px;
-          font-size: 18px;
-          color: #666;
-        }
-
-        .error-page {
-          color: #dc3545;
+        .hall-detail-page {
+          padding: 30px 0;
+          background: var(--color-page);
+          min-height: calc(100vh - 200px);
         }
 
         .container {
-          max-width: 1200px;
+          max-width: 1120px;
           margin: 0 auto;
-          padding: 20px;
+          padding: 0 20px;
         }
 
         .back-btn {
           background: white;
-          border: 1px solid #ddd;
-          padding: 10px 16px;
-          border-radius: 5px;
+          border: 1px solid var(--color-border-strong);
+          border-radius: 6px;
+          color: var(--color-primary-hover);
+          font-weight: 800;
+          padding: 9px 14px;
+          margin-bottom: 18px;
           cursor: pointer;
-          font-weight: 500;
-          color: #333;
-          margin-bottom: 20px;
-          transition: all 0.3s;
-        }
-
-        .back-btn:hover {
-          background: #f5f5f5;
-          border-color: #667eea;
-          color: #667eea;
         }
 
         .detail-layout {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 40px;
-          margin-bottom: 60px;
+          grid-template-columns: 1.4fr 0.8fr;
+          gap: 24px;
+          margin-bottom: 24px;
         }
 
-        .main-image {
-          width: 100%;
-          height: 400px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 150px;
-          margin-bottom: 20px;
+        .gallery,
+        .booking-card,
+        .info-section {
+          background: white;
+          border: 1px solid var(--color-border);
+          border-radius: 8px;
+          box-shadow: var(--shadow-card);
         }
 
         .gallery {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 10px;
+          padding: 14px;
         }
 
-        .gallery-img {
-          width: 100%;
-          aspect-ratio: 1;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .main-image {
+          position: relative;
+          height: 430px;
           border-radius: 8px;
+          background: linear-gradient(135deg, #f7941d 0%, #e86f1b 60%, #b95613 100%);
+          color: white;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 40px;
+          font-size: 34px;
+          font-weight: 800;
+          overflow: hidden;
         }
 
-        .header-section h1 {
-          font-size: 32px;
-          margin-bottom: 12px;
-          color: #333;
+        .main-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
         }
 
-        .meta {
-          display: flex;
-          gap: 20px;
-          margin-bottom: 20px;
-        }
-
-        .rating, .location {
-          font-size: 14px;
-          color: #666;
-        }
-
-        .price-section {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .gallery-nav {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 42px;
+          height: 42px;
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          border-radius: 50%;
+          background: rgba(35, 24, 12, 0.7);
           color: white;
-          padding: 20px;
-          border-radius: 10px;
-          margin-bottom: 30px;
+          font-size: 34px;
+          line-height: 1;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .gallery-nav.prev {
+          left: 14px;
+        }
+
+        .gallery-nav.next {
+          right: 14px;
+        }
+
+        .gallery-nav:hover {
+          background: var(--color-primary);
+        }
+
+        .image-count {
+          position: absolute;
+          right: 14px;
+          bottom: 14px;
+          background: rgba(35, 24, 12, 0.72);
+          color: white;
+          border-radius: 20px;
+          padding: 6px 10px;
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        .thumb-strip {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 10px;
+          margin-top: 10px;
+        }
+
+        .thumb-strip button {
+          border: 2px solid transparent;
+          border-radius: 7px;
+          padding: 0;
+          height: 82px;
+          overflow: hidden;
+          cursor: pointer;
+          background: var(--color-primary-soft);
+        }
+
+        .thumb-strip button.active {
+          border-color: var(--color-primary);
+        }
+
+        .thumb-strip img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .booking-card {
+          padding: 22px;
+          height: fit-content;
+          position: sticky;
+          top: 100px;
+        }
+
+        .category {
+          display: inline-block;
+          background: var(--color-primary-soft);
+          color: var(--color-primary-hover);
+          padding: 6px 10px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 800;
+          margin-bottom: 12px;
+        }
+
+        .booking-card h1 {
+          font-size: 26px;
+          color: var(--color-text);
+          margin-bottom: 10px;
+        }
+
+        .location,
+        .capacity {
+          color: var(--color-muted);
+          margin-bottom: 12px;
+        }
+
+        .rating {
+          color: #b88700;
+          font-weight: 800;
+          margin-bottom: 12px;
         }
 
         .price {
-          font-size: 28px;
-          font-weight: 700;
-          display: block;
-        }
-
-        .unit {
-          font-size: 13px;
-          opacity: 0.9;
-        }
-
-        .description-section,
-        .amenities-section,
-        .policies-section {
-          margin-bottom: 30px;
-        }
-
-        .description-section h3,
-        .amenities-section h3,
-        .policies-section h3 {
-          margin-bottom: 12px;
-          color: #333;
-          font-size: 18px;
-        }
-
-        .description-section p {
-          color: #666;
-          line-height: 1.6;
-          margin-bottom: 12px;
-        }
-
-        .capacity {
-          color: #667eea;
-          font-weight: 500;
-        }
-
-        .amenities-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 10px;
-        }
-
-        .amenity {
-          background: #f5f5f5;
-          padding: 12px;
-          border-radius: 5px;
-          font-size: 14px;
-          color: #333;
-        }
-
-        .policies-section ul {
-          list-style: none;
-          padding: 0;
-        }
-
-        .policies-section ul li {
-          padding: 8px 0;
-          color: #666;
-          font-size: 14px;
-          line-height: 1.6;
+          color: var(--color-primary-hover);
+          font-size: 24px;
+          font-weight: 800;
+          margin-bottom: 14px;
         }
 
         .book-btn {
-          display: block;
           width: 100%;
-          background: #667eea;
+          background: var(--color-primary);
           color: white;
-          padding: 16px;
-          border-radius: 8px;
-          text-align: center;
-          text-decoration: none;
-          font-weight: 600;
-          font-size: 16px;
-          transition: background 0.3s;
           border: none;
+          border-radius: 6px;
+          padding: 13px;
+          font-size: 16px;
+          font-weight: 800;
           cursor: pointer;
         }
 
         .book-btn:hover {
-          background: #5568d3;
+          background: var(--color-primary-hover);
         }
 
-        .reviews-section {
-          background: white;
-          padding: 30px;
-          border-radius: 10px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        .info-section {
+          padding: 22px;
+          margin-bottom: 18px;
         }
 
-        .reviews-section h2 {
-          margin-bottom: 20px;
-          font-size: 22px;
-          color: #333;
+        .info-section h2 {
+          color: var(--color-text);
+          font-size: 20px;
+          margin-bottom: 12px;
         }
 
-        .reviews-list {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        .review {
-          padding: 16px;
-          background: #f9f9f9;
-          border-radius: 8px;
-          border-left: 4px solid #667eea;
-        }
-
-        .review-header {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 8px;
-        }
-
-        .review-header strong {
-          color: #333;
-        }
-
-        .review-rating {
-          color: #ffc107;
-        }
-
-        .review-text {
-          color: #666;
-          margin-bottom: 8px;
+        .info-section p,
+        .info-section li {
+          color: var(--color-muted);
           line-height: 1.6;
         }
 
-        .review-date {
-          font-size: 12px;
-          color: #999;
+        .amenities {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .amenities span {
+          background: var(--color-primary-soft);
+          color: var(--color-primary-hover);
+          padding: 8px 12px;
+          border-radius: 20px;
+          font-weight: 800;
+          font-size: 13px;
+        }
+
+        .reviews {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 14px;
+        }
+
+        .review-card {
+          background: var(--color-surface-warm);
+          border-radius: 8px;
+          padding: 14px;
+        }
+
+        .review-head {
+          display: flex;
+          justify-content: space-between;
+          color: var(--color-text);
+          margin-bottom: 8px;
+        }
+
+        .review-card small,
+        .empty-text {
+          color: var(--color-muted);
         }
 
         @media (max-width: 768px) {
           .detail-layout {
             grid-template-columns: 1fr;
-            gap: 20px;
           }
 
-          .header-section h1 {
-            font-size: 24px;
+          .booking-card {
+            position: static;
           }
 
-          .amenities-grid {
-            grid-template-columns: 1fr;
+          .main-image {
+            height: 280px;
+          }
+
+          .thumb-strip {
+            grid-template-columns: repeat(3, 1fr);
           }
         }
       `}</style>

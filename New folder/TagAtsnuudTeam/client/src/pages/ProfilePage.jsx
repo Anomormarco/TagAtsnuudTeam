@@ -28,7 +28,7 @@ const ProfilePage = () => {
       const response = await apiClient.get('/auth/me');
       setUser(response.data.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load profile');
+      setError(err.response?.data?.message || 'Профайл ачаалахад алдаа гарлаа');
       if (err.response?.status === 401) {
         navigate('/login');
       }
@@ -43,7 +43,7 @@ const ProfilePage = () => {
       TokenManager.clearTokens();
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.message || 'Logout failed');
+      setError(err.response?.data?.message || 'Гарахад алдаа гарлаа');
     }
   };
 
@@ -59,13 +59,13 @@ const ProfilePage = () => {
   };
 
   if (loading) {
-    return <div className="profile-container"><p>Loading...</p></div>;
+    return <div className="profile-container"><p>Ачаалж байна...</p></div>;
   }
 
   return (
     <div className="profile-container">
       <div className="profile-box">
-        <h1>My Profile</h1>
+        <h1>Миний профайл</h1>
 
         {error && <div className="error-message">{error}</div>}
 
@@ -83,29 +83,29 @@ const ProfilePage = () => {
 
             <div className="profile-info">
               <div className="info-row">
-                <label>Name:</label>
+                <label>Нэр:</label>
                 <span>{user.name}</span>
               </div>
 
               <div className="info-row">
-                <label>Email:</label>
+                <label>Имэйл:</label>
                 <span>{user.email}</span>
               </div>
 
               {user.phone && (
                 <div className="info-row">
-                  <label>Phone:</label>
+                  <label>Утас:</label>
                   <span>{user.phone}</span>
                 </div>
               )}
 
               <div className="info-row">
-                <label>Role:</label>
+                <label>Эрх:</label>
                 <span className="role-badge">{user.role}</span>
               </div>
 
               <div className="info-row">
-                <label>Member Since:</label>
+                <label>Бүртгүүлсэн огноо:</label>
                 <span>{new Date(user.createdAt).toLocaleDateString()}</span>
               </div>
             </div>
@@ -113,12 +113,12 @@ const ProfilePage = () => {
             <div className="profile-actions">
               {user.role !== 'user' && (
                 <button className="dashboard-btn" onClick={handleRoleRedirect}>
-                  Go to {user.role === 'admin' ? 'Admin' : 'Owner'} Dashboard
+                  {user.role === 'admin' ? 'Админ' : 'Эзэмшигчийн'} самбар руу очих
                 </button>
               )}
-              <button className="edit-btn">Edit Profile</button>
+              <button className="edit-btn">Профайл засах</button>
               <button className="logout-btn" onClick={handleLogout}>
-                Logout
+                Гарах
               </button>
             </div>
           </div>
@@ -131,7 +131,7 @@ const ProfilePage = () => {
           justify-content: center;
           align-items: center;
           min-height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #f7941d 0%, #e86f1b 55%, #b95613 100%);
           padding: 20px;
         }
 
@@ -147,7 +147,7 @@ const ProfilePage = () => {
         .profile-box h1 {
           text-align: center;
           margin-bottom: 30px;
-          color: #333;
+          color: var(--color-text);
         }
 
         .error-message {
@@ -179,7 +179,7 @@ const ProfilePage = () => {
         }
 
         .avatar-placeholder {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #f7941d 0%, #e86f1b 55%, #b95613 100%);
           color: white;
           display: flex;
           align-items: center;
@@ -199,24 +199,24 @@ const ProfilePage = () => {
           justify-content: space-between;
           align-items: center;
           padding: 12px;
-          background-color: #f5f5f5;
+          background-color: var(--color-primary-soft);
           border-radius: 5px;
         }
 
         .info-row label {
           font-weight: 600;
-          color: #333;
+          color: var(--color-text);
           width: 120px;
         }
 
         .info-row span {
-          color: #666;
+          color: var(--color-muted);
           flex: 1;
           text-align: right;
         }
 
         .role-badge {
-          background-color: #667eea;
+          background-color: var(--color-primary);
           color: white !important;
           padding: 4px 12px;
           border-radius: 20px;
@@ -243,30 +243,30 @@ const ProfilePage = () => {
         }
 
         .dashboard-btn {
-          background-color: #28a745;
+          background-color: var(--color-success);
           color: white;
         }
 
         .dashboard-btn:hover {
-          background-color: #218838;
+          background-color: #257a36;
         }
 
         .edit-btn {
-          background-color: #667eea;
+          background-color: var(--color-primary);
           color: white;
         }
 
         .edit-btn:hover {
-          background-color: #5568d3;
+          background-color: var(--color-primary-hover);
         }
 
         .logout-btn {
-          background-color: #dc3545;
+          background-color: var(--color-danger);
           color: white;
         }
 
         .logout-btn:hover {
-          background-color: #c82333;
+          background-color: #8f2e20;
         }
       `}</style>
     </div>

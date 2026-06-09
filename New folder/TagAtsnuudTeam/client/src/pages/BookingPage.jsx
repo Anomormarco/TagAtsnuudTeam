@@ -1,44 +1,45 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import apiClient from '../utils/apiClient';
+import TokenManager from '../utils/tokenManager';
 
-/**
- * Booking Page
- * Interface for users to book a hall with date, time, and payment
- */
 const BookingPage = () => {
   const { hallId } = useParams();
   const navigate = useNavigate();
-  
+  const [showSummary, setShowSummary] = useState(false);
+  const [error, setError] = useState('');
+  const [hall, setHall] = useState(null);
   const [formData, setFormData] = useState({
     eventDate: '',
     startTime: '10:00',
     endTime: '12:00',
-    eventType: 'wedding',
-    guestCount: 50,
-    notes: ''
+    eventType: 'sport',
+    guestCount: 20,
+    notes: '',
   });
 
-  const [showSummary, setShowSummary] = useState(false);
+  const hallPrice = Number(hall?.pricePerHour || 150000);
+  const hallName = hall?.name || (hallId ? `Заал #${hallId}` : 'Заал');
 
-  const hallPrice = 150000;
+  useEffect(() => {
+    if (!hallId) return;
+    apiClient.get(`/halls/${hallId}`)
+      .then((response) => setHall(response.data.data))
+      .catch(() => setHall(null));
+  }, [hallId]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const calculateDuration = () => {
-    const start = parseInt(formData.startTime.split(':')[0]);
-    const end = parseInt(formData.endTime.split(':')[0]);
-    return end - start || 1;
+    const start = parseInt(formData.startTime.split(':')[0], 10);
+    const end = parseInt(formData.endTime.split(':')[0], 10);
+    return Math.max(end - start, 1);
   };
 
-  const calculateTotal = () => {
-    return hallPrice * calculateDuration();
-  };
+  const calculateTotal = () => hallPrice * calculateDuration();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -46,182 +47,111 @@ const BookingPage = () => {
   };
 
   const handleConfirmBooking = async () => {
-    // Call booking API here
-    alert('Booking confirmed! Redirecting to payment...');
-    navigate('/bookings');
+    try {
+      const userId = TokenManager.getUser()?.id || 21;
+      await apiClient.post('/bookings', {
+        user_id: userId,
+        hall_id: Number(hallId || 1),
+        start_time: `${formData.eventDate} ${formData.startTime}:00`,
+        end_time: `${formData.eventDate} ${formData.endTime}:00`,
+      });
+      navigate('/bookings');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Захиалга үүсгэхэд алдаа гарлаа');
+    }
   };
 
   return (
     <div className="booking-page">
       <div className="container">
-        <h1>Book Your Hall</h1>
+        <h1>Заал захиалах</h1>
+        {error && <div className="error-message">{error}</div>}
 
         <div className="booking-layout">
-          {/* Booking Form */}
           <form className="booking-form" onSubmit={handleSubmit}>
             <section className="form-section">
-              <h3>Event Details</h3>
+              <h3>Захиалгын мэдээлэл</h3>
 
               <div className="form-group">
-                <label>Event Type *</label>
-                <select
-                  name="eventType"
-                  value={formData.eventType}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="wedding">Wedding</option>
-                  <option value="birthday">Birthday Party</option>
-                  <option value="corporate">Corporate Event</option>
-                  <option value="conference">Conference</option>
-                  <option value="meeting">Business Meeting</option>
-                  <option value="other">Other</option>
+                <label>Зориулалт *</label>
+                <select name="eventType" value={formData.eventType} onChange={handleInputChange} required>
+                  <option value="sport">Спорт тоглолт</option>
+                  <option value="training">Сургалт секц</option>
+                  <option value="meeting">Хурал уулзалт</option>
+                  <option value="event">Арга хэмжээ</option>
+                  <option value="other">Бусад</option>
                 </select>
               </div>
 
               <div className="form-group">
-                <label>Event Date *</label>
-                <input
-                  type="date"
-                  name="eventDate"
-                  value={formData.eventDate}
-                  onChange={handleInputChange}
-                  required
-                />
+                <label>Огноо *</label>
+                <input type="date" name="eventDate" value={formData.eventDate} onChange={handleInputChange} required />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Start Time *</label>
-                  <input
-                    type="time"
-                    name="startTime"
-                    value={formData.startTime}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  <label>Эхлэх цаг *</label>
+                  <input type="time" name="startTime" value={formData.startTime} onChange={handleInputChange} required />
                 </div>
                 <div className="form-group">
-                  <label>End Time *</label>
-                  <input
-                    type="time"
-                    name="endTime"
-                    value={formData.endTime}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  <label>Дуусах цаг *</label>
+                  <input type="time" name="endTime" value={formData.endTime} onChange={handleInputChange} required />
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Expected Guests *</label>
-                <input
-                  type="number"
-                  name="guestCount"
-                  value={formData.guestCount}
-                  onChange={handleInputChange}
-                  min="1"
-                  max="500"
-                  required
-                />
+                <label>Хүний тоо *</label>
+                <input type="number" name="guestCount" value={formData.guestCount} onChange={handleInputChange} min="1" max="500" required />
               </div>
 
               <div className="form-group">
-                <label>Additional Notes</label>
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleInputChange}
-                  placeholder="Any special requirements or notes..."
-                  rows="4"
-                />
+                <label>Нэмэлт тайлбар</label>
+                <textarea name="notes" value={formData.notes} onChange={handleInputChange} placeholder="Тусгай хүсэлт байвал бичнэ үү..." rows="4" />
               </div>
             </section>
 
-            <button type="submit" className="btn-primary">
-              Review Booking
-            </button>
+            <button type="submit" className="btn-primary">Захиалгаа шалгах</button>
           </form>
 
-          {/* Booking Summary */}
           <aside className="booking-summary">
             <div className="summary-card">
-              <h3>Booking Summary</h3>
-              
-              <div className="summary-item">
-                <span>Hall</span>
-                <strong>Grand Ballroom</strong>
+              <h3>Захиалгын хураангуй</h3>
+              <div className="summary-item"><span>Заал</span><strong>{hallName}</strong></div>
+              <div className="summary-item"><span>Огноо</span><strong>{formData.eventDate || 'Сонгоогүй'}</strong></div>
+              <div className="summary-item"><span>Цаг</span><strong>{formData.startTime} - {formData.endTime}</strong></div>
+              <div className="summary-item"><span>Үргэлжлэх</span><strong>{calculateDuration()} цаг</strong></div>
+              <div className="summary-item"><span>Хүний тоо</span><strong>{formData.guestCount} хүн</strong></div>
+              <div className="divider" />
+              <div className="breakdown-item">
+                <span>₮{hallPrice.toLocaleString()} × {calculateDuration()} цаг</span>
+                <span>₮{calculateTotal().toLocaleString()}</span>
               </div>
-
-              <div className="summary-item">
-                <span>Date</span>
-                <strong>{formData.eventDate || 'Not selected'}</strong>
-              </div>
-
-              <div className="summary-item">
-                <span>Duration</span>
-                <strong>{calculateDuration()} hour{calculateDuration() !== 1 ? 's' : ''}</strong>
-              </div>
-
-              <div className="summary-item">
-                <span>Time</span>
-                <strong>{formData.startTime} - {formData.endTime}</strong>
-              </div>
-
-              <div className="summary-item">
-                <span>Guests</span>
-                <strong>{formData.guestCount} people</strong>
-              </div>
-
-              <div className="summary-item">
-                <span>Type</span>
-                <strong>{formData.eventType.charAt(0).toUpperCase() + formData.eventType.slice(1)}</strong>
-              </div>
-
-              <div className="divider"></div>
-
-              <div className="price-breakdown">
-                <div className="breakdown-item">
-                  <span>₮{hallPrice.toLocaleString()} × {calculateDuration()} hour</span>
-                  <span>₮{calculateTotal().toLocaleString()}</span>
-                </div>
-              </div>
-
               <div className="total">
-                <span>Total</span>
+                <span>Нийт</span>
                 <span className="total-price">₮{calculateTotal().toLocaleString()}</span>
               </div>
-
               <div className="deposit-info">
-                <strong>30% Deposit:</strong> ₮{(calculateTotal() * 0.3).toLocaleString()}
+                <strong>30% урьдчилгаа:</strong> ₮{(calculateTotal() * 0.3).toLocaleString()}
               </div>
             </div>
           </aside>
         </div>
 
-        {/* Confirmation Modal */}
         {showSummary && (
           <div className="modal-overlay">
             <div className="modal">
-              <h2>Confirm Your Booking</h2>
-              <p>Please review your booking details before confirming.</p>
-              
+              <h2>Захиалга баталгаажуулах</h2>
+              <p>Баталгаажуулахын өмнө мэдээллээ шалгана уу.</p>
               <div className="modal-details">
-                <p><strong>Hall:</strong> Grand Ballroom</p>
-                <p><strong>Date:</strong> {formData.eventDate}</p>
-                <p><strong>Time:</strong> {formData.startTime} - {formData.endTime}</p>
-                <p><strong>Guests:</strong> {formData.guestCount}</p>
-                <p><strong>Total Cost:</strong> ₮{calculateTotal().toLocaleString()}</p>
-                <p><strong>Deposit Required:</strong> ₮{(calculateTotal() * 0.3).toLocaleString()}</p>
+                <p><strong>Заал:</strong> {hallName}</p>
+                <p><strong>Огноо:</strong> {formData.eventDate}</p>
+                <p><strong>Цаг:</strong> {formData.startTime} - {formData.endTime}</p>
+                <p><strong>Хүний тоо:</strong> {formData.guestCount}</p>
+                <p><strong>Нийт төлбөр:</strong> ₮{calculateTotal().toLocaleString()}</p>
               </div>
-
               <div className="modal-actions">
-                <button className="btn-secondary" onClick={() => setShowSummary(false)}>
-                  Back
-                </button>
-                <button className="btn-primary" onClick={handleConfirmBooking}>
-                  Confirm & Pay
-                </button>
+                <button className="btn-secondary" onClick={() => setShowSummary(false)}>Буцах</button>
+                <button className="btn-primary" onClick={handleConfirmBooking}>Баталгаажуулах</button>
               </div>
             </div>
           </div>
@@ -231,7 +161,7 @@ const BookingPage = () => {
       <style>{`
         .booking-page {
           padding: 30px 0;
-          background: #f8f9fa;
+          background: var(--color-page);
           min-height: calc(100vh - 200px);
         }
 
@@ -243,42 +173,55 @@ const BookingPage = () => {
 
         .booking-page h1 {
           font-size: 28px;
-          color: #333;
-          margin-bottom: 30px;
+          color: var(--color-text);
+          margin-bottom: 24px;
+        }
+
+        .error-message {
+          background: #fff1f0;
+          border: 1px solid #ffc6c2;
+          color: var(--color-danger);
+          padding: 12px;
+          border-radius: 6px;
+          margin-bottom: 16px;
+          font-weight: 700;
         }
 
         .booking-layout {
           display: grid;
           grid-template-columns: 1fr 350px;
-          gap: 30px;
+          gap: 24px;
+        }
+
+        .booking-form,
+        .summary-card,
+        .modal {
+          background: white;
+          border-radius: 8px;
+          box-shadow: var(--shadow-card);
+          border: 1px solid var(--color-border);
         }
 
         .booking-form {
-          background: white;
-          padding: 30px;
-          border-radius: 10px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          padding: 26px;
         }
 
-        .form-section {
-          margin-bottom: 30px;
-        }
-
-        .form-section h3 {
-          margin-bottom: 20px;
-          color: #333;
-          font-size: 18px;
+        .form-section h3,
+        .summary-card h3,
+        .modal h2 {
+          margin-bottom: 18px;
+          color: var(--color-text);
         }
 
         .form-group {
-          margin-bottom: 20px;
+          margin-bottom: 18px;
         }
 
         .form-group label {
           display: block;
           margin-bottom: 8px;
-          font-weight: 500;
-          color: #333;
+          font-weight: 700;
+          color: var(--color-text);
           font-size: 14px;
         }
 
@@ -287,8 +230,8 @@ const BookingPage = () => {
         .form-group textarea {
           width: 100%;
           padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 5px;
+          border: 1px solid var(--color-border-strong);
+          border-radius: 6px;
           font-size: 14px;
           font-family: inherit;
         }
@@ -297,31 +240,40 @@ const BookingPage = () => {
         .form-group select:focus,
         .form-group textarea:focus {
           outline: none;
-          border-color: #667eea;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+          border-color: var(--color-primary);
+          box-shadow: 0 0 0 3px rgba(232, 111, 27, 0.14);
         }
 
         .form-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 15px;
+          gap: 14px;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+          padding: 13px 16px;
+          border-radius: 6px;
+          font-weight: 800;
+          cursor: pointer;
+          border: none;
         }
 
         .btn-primary {
           width: 100%;
-          padding: 14px;
-          background: #667eea;
+          background: var(--color-primary);
           color: white;
-          border: none;
-          border-radius: 5px;
-          font-weight: 600;
-          font-size: 16px;
-          cursor: pointer;
-          transition: background 0.3s;
         }
 
         .btn-primary:hover {
-          background: #5568d3;
+          background: var(--color-primary-hover);
+        }
+
+        .btn-secondary {
+          flex: 1;
+          background: white;
+          border: 1px solid var(--color-border-strong);
+          color: var(--color-text);
         }
 
         .booking-summary {
@@ -331,61 +283,38 @@ const BookingPage = () => {
         }
 
         .summary-card {
-          background: white;
           padding: 20px;
-          border-radius: 10px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
-        .summary-card h3 {
-          margin-bottom: 20px;
-          color: #333;
-          font-size: 16px;
-        }
-
-        .summary-item {
+        .summary-item,
+        .breakdown-item,
+        .total {
           display: flex;
           justify-content: space-between;
+          gap: 12px;
           margin-bottom: 12px;
           font-size: 13px;
-          color: #666;
+          color: var(--color-muted);
         }
 
-        .summary-item span:first-child {
-          font-weight: 500;
-        }
-
-        .summary-item strong {
-          color: #333;
+        .summary-item strong,
+        .breakdown-item span:last-child {
+          color: var(--color-text);
         }
 
         .divider {
           height: 1px;
-          background: #eee;
+          background: var(--color-border);
           margin: 15px 0;
         }
 
-        .price-breakdown {
-          margin-bottom: 15px;
-        }
-
-        .breakdown-item {
-          display: flex;
-          justify-content: space-between;
-          font-size: 13px;
-          color: #666;
-        }
-
         .total {
-          display: flex;
-          justify-content: space-between;
           align-items: center;
           padding: 12px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: var(--color-primary);
           color: white;
-          border-radius: 5px;
-          margin-bottom: 12px;
-          font-weight: 600;
+          border-radius: 6px;
+          font-weight: 800;
         }
 
         .total-price {
@@ -394,18 +323,15 @@ const BookingPage = () => {
 
         .deposit-info {
           font-size: 12px;
-          color: #666;
-          background: #f9f9f9;
+          color: var(--color-muted);
+          background: var(--color-surface-warm);
           padding: 10px;
-          border-radius: 5px;
+          border-radius: 6px;
         }
 
         .modal-overlay {
           position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          inset: 0;
           background: rgba(0, 0, 0, 0.5);
           display: flex;
           align-items: center;
@@ -414,54 +340,26 @@ const BookingPage = () => {
         }
 
         .modal {
-          background: white;
-          padding: 30px;
-          border-radius: 10px;
+          padding: 28px;
           max-width: 500px;
           width: 90%;
         }
 
-        .modal h2 {
-          margin-bottom: 15px;
-          color: #333;
-        }
-
-        .modal p {
-          color: #666;
-          margin-bottom: 20px;
-        }
-
         .modal-details {
-          background: #f9f9f9;
-          padding: 20px;
-          border-radius: 5px;
-          margin-bottom: 20px;
+          background: var(--color-surface-warm);
+          padding: 18px;
+          border-radius: 6px;
+          margin: 18px 0;
         }
 
         .modal-details p {
-          margin: 10px 0;
+          margin: 9px 0;
           font-size: 14px;
         }
 
         .modal-actions {
           display: flex;
-          gap: 15px;
-        }
-
-        .btn-secondary {
-          flex: 1;
-          padding: 12px;
-          border: 1px solid #ddd;
-          background: white;
-          border-radius: 5px;
-          cursor: pointer;
-          font-weight: 500;
-          transition: all 0.3s;
-        }
-
-        .btn-secondary:hover {
-          border-color: #667eea;
-          color: #667eea;
+          gap: 12px;
         }
 
         .modal .btn-primary {
@@ -470,16 +368,13 @@ const BookingPage = () => {
         }
 
         @media (max-width: 768px) {
-          .booking-layout {
+          .booking-layout,
+          .form-row {
             grid-template-columns: 1fr;
           }
 
           .booking-summary {
             position: static;
-          }
-
-          .form-row {
-            grid-template-columns: 1fr;
           }
         }
       `}</style>

@@ -1,62 +1,76 @@
-import { sendSuccess } from "../utils/apiResponse.js"; // Амжилттай response үүсгэх helper.
-import * as bookingService from "../services/booking.service.js"; // Booking service-ээс бизнес логик функцуудыг import хийнэ.
+const bookingService = require("../services/booking.service");
+const { sendSuccess } = require("../utils/response");
 
-export const createBookingController = async (req, res) => {
-  const booking = await bookingService.createBooking(req.body); // Захиалгыг бизнес логикээр үүсгэнэ.
-  return sendSuccess(res, "Захиалга амжилттай үүслээ.", booking, 201); // 201 статус болон booking өгөгдлийг буцаана.
+const createBookingController = async (req, res) => {
+  const booking = await bookingService.createBooking(req.body);
+  return sendSuccess(res, booking, "Booking created successfully", 201);
 };
 
-export const getMyBookingsController = async (req, res) => {
-  const userId = req.user?.id || req.query.userId; // Auth байхгүй тохиолдолд query parameter-аар fallback хийнэ.
+const getMyBookingsController = async (req, res) => {
+  const userId = req.user?.id || req.query.userId || req.headers["x-user-id"];
   const bookings = await bookingService.getMyBookings(userId);
-  return sendSuccess(res, "Миний захиалгууд амжилттай олдлоо.", bookings);
+  return sendSuccess(res, bookings, "My bookings fetched successfully");
 };
 
-export const getBookingController = async (req, res) => {
+const getBookingController = async (req, res) => {
   const booking = await bookingService.getBooking(req.params.id);
-  return sendSuccess(res, "Захиалгын мэдээлэл амжилттай олдлоо.", booking);
+  return sendSuccess(res, booking, "Booking fetched successfully");
 };
 
-export const updateBookingController = async (req, res) => {
+const updateBookingController = async (req, res) => {
   const booking = await bookingService.updateBooking(req.params.id, req.body);
-  return sendSuccess(res, "Захиалга амжилттай шинэчлэгдлээ.", booking);
+  return sendSuccess(res, booking, "Booking updated successfully");
 };
 
-export const cancelBookingController = async (req, res) => {
+const cancelBookingController = async (req, res) => {
   const booking = await bookingService.cancelBooking(req.params.id);
-  return sendSuccess(res, "Захиалга амжилттай цуцлагдлаа.", booking);
+  return sendSuccess(res, booking, "Booking cancelled successfully");
 };
 
-export const deleteBookingController = async (req, res) => {
+const deleteBookingController = async (req, res) => {
   await bookingService.softDeleteBooking(req.params.id);
-  return sendSuccess(res, "Захиалга амжилттай устгагдлаа.", { id: req.params.id });
+  return sendSuccess(res, { id: req.params.id }, "Booking deleted successfully");
 };
 
-export const getHallAvailabilityController = async (req, res) => {
-  const hallId = req.params.id || req.query.hall_id; // Хоёр endpoint-той нийцүүлэхийн тулд params эсвэл query-г ашиглана.
+const getHallAvailabilityController = async (req, res) => {
+  const hallId = req.params.id || req.query.hall_id;
   const { start_time, end_time } = req.query;
   const availability = await bookingService.getHallAvailability(hallId, start_time, end_time);
-  return sendSuccess(res, "Заалны боломжит цагийн мэдээлэл.", availability);
+  return sendSuccess(res, availability, "Hall availability fetched successfully");
 };
 
-export const checkOverlapController = async (req, res) => {
+const checkOverlapController = async (req, res) => {
   const overlaps = await bookingService.checkOverlap(req.query);
-  return sendSuccess(res, overlaps ? "Цаг давхцаж байна." : "Цаг боломжтой.", {
+  return sendSuccess(res, {
     hall_id: Number(req.query.hall_id),
     start_time: req.query.start_time,
     end_time: req.query.end_time,
     overlaps,
-  });
+  }, overlaps ? "Time overlaps" : "Time is available");
 };
 
-export const createReviewController = async (req, res) => {
-  const bookingId = req.params.bookingId || req.params.id; // bookingId-г params-аас авна.
-  const review = await bookingService.createReview({ booking_id: bookingId, ...req.body });
-  return sendSuccess(res, "Review амжилттай нэмэгдлээ.", review, 201);
+const createReviewController = async (req, res) => {
+  const hallId = req.params.hallId || req.params.id;
+  const userId = req.user?.id || req.body.user_id || req.headers["x-user-id"];
+  const review = await bookingService.createReview({ hall_id: hallId, ...req.body, user_id: userId });
+  return sendSuccess(res, review, "Review created successfully", 201);
 };
 
-export const getReviewsController = async (req, res) => {
-  const bookingId = req.params.bookingId || req.params.id; // bookingId-г params-аас авна.
-  const reviews = await bookingService.getReviews(bookingId);
-  return sendSuccess(res, "Booking-ын review-үүд амжилттай олдлоо.", reviews);
+const getReviewsController = async (req, res) => {
+  const hallId = req.params.hallId || req.params.id;
+  const reviews = await bookingService.getReviews(hallId);
+  return sendSuccess(res, reviews, "Reviews fetched successfully");
+};
+
+module.exports = {
+  cancelBookingController,
+  checkOverlapController,
+  createBookingController,
+  createReviewController,
+  deleteBookingController,
+  getBookingController,
+  getHallAvailabilityController,
+  getMyBookingsController,
+  getReviewsController,
+  updateBookingController,
 };

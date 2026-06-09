@@ -1,59 +1,54 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-/**
- * Footer Component
- * Application footer with links and info
- */
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
     <footer className="footer">
       <div className="footer-container">
-        <div className="footer-column">
-          <h4>About HallBook</h4>
-          <p>Find and book beautiful halls for your events, meetings, and celebrations.</p>
+        <div className="footer-section">
+          <h4>Заал</h4>
+          <p>Спорт заал, хурлын танхим, арга хэмжээний заалыг хурдан хайж захиалах нэгдсэн систем.</p>
         </div>
 
-        <div className="footer-column">
-          <h4>Quick Links</h4>
+        <div className="footer-section">
+          <h4>Цэс</h4>
           <ul>
-            <li><Link to="/">Browse Halls</Link></li>
-            <li><Link to="/bookings">My Bookings</Link></li>
-            <li><Link to="/profile">Profile</Link></li>
+            <li><Link to="/">Заалууд</Link></li>
+            <li><Link to="/bookings">Миний захиалга</Link></li>
+            <li><Link to="/profile">Профайл</Link></li>
           </ul>
         </div>
 
-        <div className="footer-column">
-          <h4>Legal</h4>
+        <div className="footer-section">
+          <h4>Тусламж</h4>
           <ul>
-            <li><Link to="#">Privacy Policy</Link></li>
-            <li><Link to="#">Terms of Service</Link></li>
-            <li><Link to="#">Contact</Link></li>
+            <li><Link to="#">Үйлчилгээний нөхцөл</Link></li>
+            <li><Link to="#">Нууцлал</Link></li>
+            <li><Link to="#">Холбоо барих</Link></li>
           </ul>
         </div>
 
-        <div className="footer-column">
-          <h4>Follow Us</h4>
+        <div className="footer-section">
+          <h4>Бидэнтэй нэгдээрэй</h4>
           <div className="social-links">
             <a href="#">Facebook</a>
-            <a href="#">Twitter</a>
             <a href="#">Instagram</a>
           </div>
         </div>
       </div>
 
       <div className="footer-bottom">
-        <p>&copy; {currentYear} HallBook. All rights reserved.</p>
+        <p>© {currentYear} Заал. Бүх эрх хуулиар хамгаалагдсан.</p>
       </div>
 
       <style>{`
         .footer {
-          background: #1a1a2e;
-          color: #e0e0e0;
-          margin-top: 60px;
+          background: #2b1b10;
+          color: #f7eadc;
           padding: 40px 0 20px;
+          margin-top: auto;
         }
 
         .footer-container {
@@ -61,70 +56,55 @@ const Footer = () => {
           margin: 0 auto;
           padding: 0 20px;
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 30px;
-          margin-bottom: 30px;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 28px;
         }
 
-        .footer-column h4 {
+        .footer-section h4 {
           color: white;
-          margin-bottom: 15px;
+          margin-bottom: 14px;
           font-size: 16px;
-          font-weight: 600;
         }
 
-        .footer-column p {
+        .footer-section p,
+        .footer-section a {
+          color: #d8c2aa;
           font-size: 14px;
           line-height: 1.6;
-          color: #b0b0b0;
-        }
-
-        .footer-column ul {
-          list-style: none;
-        }
-
-        .footer-column ul li {
-          margin-bottom: 10px;
-        }
-
-        .footer-column ul li a {
-          color: #b0b0b0;
           text-decoration: none;
-          transition: color 0.3s;
         }
 
-        .footer-column ul li a:hover {
-          color: #667eea;
+        .footer-section a:hover {
+          color: #ffb35f;
+        }
+
+        .footer-section ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        .footer-section li {
+          margin-bottom: 8px;
         }
 
         .social-links {
           display: flex;
-          gap: 15px;
-        }
-
-        .social-links a {
-          color: #b0b0b0;
-          text-decoration: none;
-          transition: color 0.3s;
-        }
-
-        .social-links a:hover {
-          color: #667eea;
+          gap: 12px;
+          flex-wrap: wrap;
         }
 
         .footer-bottom {
-          border-top: 1px solid #333;
-          padding-top: 20px;
+          max-width: 1200px;
+          margin: 28px auto 0;
+          padding: 18px 20px 0;
+          border-top: 1px solid rgba(255, 255, 255, 0.14);
           text-align: center;
-          color: #666;
-          font-size: 14px;
         }
 
-        @media (max-width: 768px) {
-          .footer-container {
-            grid-template-columns: 1fr;
-            gap: 20px;
-          }
+        .footer-bottom p {
+          color: #bca58c;
+          font-size: 13px;
         }
       `}</style>
     </footer>

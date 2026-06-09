@@ -1,189 +1,154 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import apiClient from '../utils/apiClient';
 
-/**
- * Home Page - Hall Listing
- * Displays all halls with filtering, search, sorting, pagination
- */
 const HomePage = () => {
   const [halls, setHalls] = useState([]);
   const [filteredHalls, setFilteredHalls] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
-  
-  // Filters
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [priceRange, setPriceRange] = useState([0, 500000]);
   const [sortBy, setSortBy] = useState('popular');
   const [page, setPage] = useState(1);
 
-  // Mock data - Replace with API call
   useEffect(() => {
-    setTimeout(() => {
-      const mockHalls = [
-        {
-          id: 1,
-          name: 'Grand Ballroom',
-          image: '🏢',
-          category: 'luxury',
-          capacity: 500,
-          pricePerHour: 150000,
-          rating: 4.8,
-          reviews: 125,
-          location: 'Sukhbaatar District',
-          description: 'Elegant ballroom perfect for weddings and large events'
-        },
-        {
-          id: 2,
-          name: 'Modern Conference Center',
-          image: '🏗️',
-          category: 'business',
-          capacity: 300,
-          pricePerHour: 100000,
-          rating: 4.6,
-          reviews: 89,
-          location: 'Khan-Uul District',
-          description: 'State-of-the-art conference facilities'
-        },
-        {
-          id: 3,
-          name: 'Cozy Lounge',
-          image: '🍽️',
-          category: 'casual',
-          capacity: 80,
-          pricePerHour: 50000,
-          rating: 4.7,
-          reviews: 156,
-          location: 'Peace Avenue',
-          description: 'Intimate venue for parties and gatherings'
-        },
-        {
-          id: 4,
-          name: 'Wedding Palace',
-          image: '💍',
-          category: 'luxury',
-          capacity: 600,
-          pricePerHour: 200000,
-          rating: 4.9,
-          reviews: 200,
-          location: 'Bayanzurkh District',
-          description: 'Spectacular wedding venue with stunning decorations'
-        },
-        {
-          id: 5,
-          name: 'Business Hub',
-          image: '💼',
-          category: 'business',
-          capacity: 150,
-          pricePerHour: 70000,
-          rating: 4.5,
-          reviews: 67,
-          location: 'Chingeltei District',
-          description: 'Professional meeting spaces with latest technology'
-        },
-        {
-          id: 6,
-          name: 'Event Space',
-          image: '🎉',
-          category: 'casual',
-          capacity: 200,
-          pricePerHour: 80000,
-          rating: 4.6,
-          reviews: 112,
-          location: 'Songginokhairkhan District',
-          description: 'Versatile event space for any occasion'
-        }
-      ];
-      
-      setHalls(mockHalls);
-      applyFilters(mockHalls);
+    const loadInitialData = async () => {
+      setLoading(true);
+      setError('');
+
+      const [hallsResponse, categoriesResponse] = await Promise.all([
+        apiClient.get('/halls', { params: { size: 200, sort: 'created_at,desc' } }),
+        apiClient.get('/categories'),
+      ]);
+
+      const hallContent = hallsResponse.data?.data?.content;
+      const categoryContent = categoriesResponse.data?.data;
+
+      setHalls(Array.isArray(hallContent) ? hallContent : []);
+      setCategories(Array.isArray(categoryContent) ? categoryContent : []);
       setLoading(false);
-    }, 300);
+    };
+
+    loadInitialData().catch((err) => {
+      setHalls([]);
+      setCategories([]);
+      setError(err.response?.data?.message || 'Заалны мэдээлэл ачаалж чадсангүй. Server асаалттай эсэхийг шалгана уу.');
+      setLoading(false);
+    });
   }, []);
 
-  // Apply all filters
-  const applyFilters = (data) => {
-    let filtered = data;
+  useEffect(() => {
+    let filtered = [...halls];
 
-    // Category filter
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(h => h.category === selectedCategory);
+    if (selectedCategory) {
+      filtered = filtered.filter((hall) => (hall.categoryIds || []).includes(Number(selectedCategory)));
     }
 
-    // Price filter
-    filtered = filtered.filter(h => h.pricePerHour >= priceRange[0] && h.pricePerHour <= priceRange[1]);
+    filtered = filtered.filter(
+      (hall) => Number(hall.pricePerHour) >= priceRange[0] && Number(hall.pricePerHour) <= priceRange[1]
+    );
 
-    // Search filter
     const search = searchParams.get('search');
     if (search) {
-      filtered = filtered.filter(h => 
-        h.name.toLowerCase().includes(search.toLowerCase()) ||
-        h.description.toLowerCase().includes(search.toLowerCase())
+      filtered = filtered.filter((hall) =>
+        `${hall.name} ${hall.description} ${hall.location}`.toLowerCase().includes(search.toLowerCase())
       );
     }
 
-    // Sort
     if (sortBy === 'price-low') {
-      filtered.sort((a, b) => a.pricePerHour - b.pricePerHour);
+      filtered.sort((a, b) => Number(a.pricePerHour) - Number(b.pricePerHour));
     } else if (sortBy === 'price-high') {
-      filtered.sort((a, b) => b.pricePerHour - a.pricePerHour);
+      filtered.sort((a, b) => Number(b.pricePerHour) - Number(a.pricePerHour));
     } else if (sortBy === 'rating') {
-      filtered.sort((a, b) => b.rating - a.rating);
+      filtered.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
     } else {
-      filtered.sort((a, b) => b.reviews - a.reviews);
+      filtered.sort((a, b) => Number(b.reviewCount || 0) - Number(a.reviewCount || 0));
     }
 
     setFilteredHalls(filtered);
     setPage(1);
-  };
+  }, [halls, selectedCategory, priceRange, sortBy, searchParams]);
 
-  useEffect(() => {
-    applyFilters(halls);
-  }, [selectedCategory, priceRange, sortBy, searchParams]);
-
-  // Pagination
-  const itemsPerPage = 6;
+  const itemsPerPage = 12;
   const totalPages = Math.ceil(filteredHalls.length / itemsPerPage);
   const paginatedHalls = filteredHalls.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const quickCategories = ['Хөлбөмбөг', 'Сагсан бөмбөг', 'Волейбол', 'Ширээний теннис'];
+
+  const selectCategoryByName = (categoryName) => {
+    const category = categories.find((item) => item.name === categoryName);
+    setSelectedCategory(category ? String(category.id) : '');
+  };
 
   return (
     <div className="home-page">
-      {/* Hero Section */}
       <section className="hero">
         <div className="hero-content">
-          <h1>Find Your Perfect Hall</h1>
-          <p>Discover and book beautiful venues for any occasion</p>
+          <h1>Монголын бүх заалыг эндээс</h1>
+          <p>Дүүрэг, төрөл, үнэ болон үнэлгээгээр нь шүүж хүссэн заалаа захиалаарай.</p>
+          <div className="quick-tabs">
+            {quickCategories.map((categoryName) => {
+              const category = categories.find((item) => item.name === categoryName);
+              const isActive = category && selectedCategory === String(category.id);
+
+              return (
+                <button
+                  key={categoryName}
+                  type="button"
+                  className={isActive ? 'active' : ''}
+                  onClick={() => selectCategoryByName(categoryName)}
+                >
+                  {categoryName}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 
       <div className="container">
+        <div className="list-header">
+          <h2>Ð¡Ð°Ð½Ð°Ð» Ð±Ð¾Ð»Ð³Ð¾Ñ… Ð·Ð°Ð°Ð»ÑƒÑƒÐ´</h2>
+          <span>{filteredHalls.length} Ð·Ð°Ð°Ð» Ð¾Ð»Ð´Ð»Ð¾Ð¾</span>
+        </div>
+
         <div className="layout">
-          {/* Sidebar - Filters */}
           <aside className="sidebar">
             <div className="filter-section">
-              <h3>Category</h3>
-              {['all', 'luxury', 'business', 'casual'].map(cat => (
-                <label key={cat} className="checkbox">
+              <h3>Төрөл</h3>
+              <label className="checkbox">
+                <input
+                  type="radio"
+                  name="category"
+                  checked={selectedCategory === ''}
+                  onChange={() => setSelectedCategory('')}
+                />
+                <span>Бүгд</span>
+              </label>
+              {categories.map((category) => (
+                <label key={category.id} className="checkbox">
                   <input
                     type="radio"
                     name="category"
-                    checked={selectedCategory === cat}
-                    onChange={() => setSelectedCategory(cat)}
+                    checked={selectedCategory === String(category.id)}
+                    onChange={() => setSelectedCategory(String(category.id))}
                   />
-                  <span>{cat.charAt(0).toUpperCase() + cat.slice(1)}</span>
+                  <span>{category.name}</span>
                 </label>
               ))}
             </div>
 
             <div className="filter-section">
-              <h3>Price Range</h3>
+              <h3>Үнийн дээд хэмжээ</h3>
               <input
                 type="range"
                 min="0"
                 max="500000"
                 step="10000"
                 value={priceRange[1]}
-                onChange={(e) => setPriceRange([0, parseInt(e.target.value)])}
+                onChange={(e) => setPriceRange([0, parseInt(e.target.value, 10)])}
               />
               <div className="price-display">
                 ₮{priceRange[0].toLocaleString()} - ₮{priceRange[1].toLocaleString()}
@@ -191,59 +156,65 @@ const HomePage = () => {
             </div>
 
             <div className="filter-section">
-              <h3>Sort By</h3>
+              <h3>Эрэмбэлэх</h3>
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <option value="popular">Most Popular</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="rating">Highest Rated</option>
+                <option value="popular">Их сэтгэгдэлтэй</option>
+                <option value="price-low">Үнэ багаас их</option>
+                <option value="price-high">Үнэ ихээс бага</option>
+                <option value="rating">Үнэлгээ өндөр</option>
               </select>
             </div>
           </aside>
 
-          {/* Main Content */}
           <main className="main-content">
+            <div className="list-header">
+              <h2>Санал болгох заалууд</h2>
+              <span>{filteredHalls.length} заал олдлоо</span>
+            </div>
+
             {loading ? (
-              <div className="loading">Loading halls...</div>
+              <div className="loading">Заалуудыг ачаалж байна...</div>
+            ) : error ? (
+              <div className="no-results">
+                <p>{error}</p>
+              </div>
             ) : paginatedHalls.length === 0 ? (
               <div className="no-results">
-                <p>No halls found. Try adjusting your filters.</p>
+                <p>Илэрц олдсонгүй. Шүүлтүүрээ өөрчлөөд дахин хайна уу.</p>
               </div>
             ) : (
               <>
                 <div className="halls-grid">
-                  {paginatedHalls.map(hall => (
+                  {paginatedHalls.map((hall) => (
                     <Link to={`/halls/${hall.id}`} key={hall.id} className="hall-card">
-                      <div className="hall-image">{hall.image}</div>
+                      <div className="hall-image">
+                        {hall.imageUrl ? <img src={hall.imageUrl} alt={hall.name} /> : <span>Заал</span>}
+                      </div>
                       <div className="hall-info">
                         <h3>{hall.name}</h3>
                         <p className="description">{hall.description}</p>
                         <div className="details">
-                          <span>👥 {hall.capacity} ppl</span>
-                          <span>📍 {hall.location}</span>
+                          <span>{hall.capacity} хүн</span>
+                          <span>{hall.location}</span>
                         </div>
                         <div className="footer">
                           <div>
-                            <span className="price">₮{hall.pricePerHour.toLocaleString()}/hr</span>
+                            <span className="price">₮{Number(hall.pricePerHour).toLocaleString()}/цаг</span>
                             <div className="rating">
-                              ⭐ {hall.rating} ({hall.reviews} reviews)
+                              ★ {hall.rating || 0} ({hall.reviewCount || 0} сэтгэгдэл)
                             </div>
                           </div>
+                          <span className="add-link">Дэлгэрэнгүй</span>
                         </div>
                       </div>
                     </Link>
                   ))}
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="pagination">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                      <button
-                        key={p}
-                        className={`page-btn ${page === p ? 'active' : ''}`}
-                        onClick={() => setPage(p)}
-                      >
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                      <button key={p} className={`page-btn ${page === p ? 'active' : ''}`} onClick={() => setPage(p)}>
                         {p}
                       </button>
                     ))}
@@ -261,22 +232,53 @@ const HomePage = () => {
         }
 
         .hero {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          padding: 80px 20px;
-          text-align: center;
-          margin-bottom: 40px;
+          background: linear-gradient(135deg, #fff2dc 0%, #ffe3bf 100%);
+          color: var(--color-text);
+          padding: 44px 20px 36px;
+          margin-bottom: 30px;
+          border-bottom: 1px solid var(--color-border);
+        }
+
+        .hero-content {
+          max-width: 1200px;
+          margin: 0 auto;
         }
 
         .hero-content h1 {
-          font-size: 48px;
-          margin-bottom: 15px;
-          font-weight: 700;
+          font-size: 42px;
+          margin-bottom: 12px;
+          font-weight: 800;
+          color: var(--color-text);
         }
 
         .hero-content p {
-          font-size: 20px;
-          opacity: 0.9;
+          font-size: 17px;
+          color: var(--color-muted);
+          margin-bottom: 20px;
+        }
+
+        .quick-tabs {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .quick-tabs button {
+          background: white;
+          color: var(--color-primary-hover);
+          border: 1px solid var(--color-border-strong);
+          border-radius: 8px;
+          padding: 9px 13px;
+          font-weight: 700;
+          font-size: 14px;
+          cursor: pointer;
+        }
+
+        .quick-tabs button.active,
+        .quick-tabs button:hover {
+          background: var(--color-primary);
+          border-color: var(--color-primary);
+          color: white;
         }
 
         .container {
@@ -288,31 +290,66 @@ const HomePage = () => {
         .layout {
           display: grid;
           grid-template-columns: 250px 1fr;
-          gap: 30px;
+          gap: 24px;
+          align-items: start;
+          position: relative;
         }
 
         .sidebar {
           background: white;
           padding: 20px;
-          border-radius: 10px;
+          border-radius: 8px;
           height: fit-content;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          max-height: calc(100vh - 116px);
+          overflow-y: auto;
+          overflow-x: hidden;
+          overscroll-behavior: contain;
+          scrollbar-gutter: stable;
+          box-shadow: var(--shadow-card);
+          border: 1px solid var(--color-border);
           position: sticky;
-          top: 100px;
+          top: 92px;
+          align-self: start;
+          margin-top: 0;
+        }
+
+        .sidebar::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+          background: var(--color-primary-soft);
+          border-radius: 999px;
+          margin: 8px 0;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+          background: var(--color-border-strong);
+          border-radius: 999px;
+          border: 2px solid var(--color-primary-soft);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+          background: var(--color-primary);
         }
 
         .filter-section {
-          margin-bottom: 25px;
-          padding-bottom: 15px;
-          border-bottom: 1px solid #eee;
+          margin-bottom: 24px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid var(--color-border);
+        }
+
+        .filter-section:last-child {
+          margin-bottom: 0;
+          padding-bottom: 0;
+          border-bottom: 0;
         }
 
         .filter-section h3 {
           margin-bottom: 12px;
-          color: #333;
+          color: var(--color-text);
           font-size: 14px;
-          font-weight: 600;
-          text-transform: uppercase;
+          font-weight: 800;
         }
 
         .checkbox {
@@ -320,46 +357,71 @@ const HomePage = () => {
           align-items: center;
           margin-bottom: 10px;
           cursor: pointer;
-        }
-
-        .checkbox input {
-          margin-right: 8px;
-          cursor: pointer;
+          gap: 8px;
         }
 
         .checkbox span {
           font-size: 14px;
-          color: #666;
+          color: var(--color-muted);
         }
 
         .price-display {
           font-size: 13px;
-          color: #667eea;
+          color: var(--color-primary-hover);
           margin-top: 8px;
-          font-weight: 500;
+          font-weight: 700;
         }
 
         .filter-section select {
           width: 100%;
-          padding: 8px;
-          border: 1px solid #ddd;
-          border-radius: 5px;
+          padding: 9px;
+          border: 1px solid var(--color-border-strong);
+          border-radius: 6px;
           font-size: 14px;
+          color: var(--color-text);
+          background: white;
+        }
+
+        .list-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+          gap: 12px;
+        }
+
+        .layout .list-header {
+          display: none;
+        }
+
+        .main-content {
+          position: relative;
+        }
+
+        .list-header h2 {
+          font-size: 22px;
+          color: var(--color-text);
+        }
+
+        .list-header span {
+          color: var(--color-muted);
+          font-weight: 700;
         }
 
         .halls-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 18px;
           margin-bottom: 40px;
         }
 
         .hall-card {
           background: white;
-          border-radius: 10px;
+          border-radius: 8px;
           overflow: hidden;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-          transition: transform 0.3s, box-shadow 0.3s;
+          box-shadow: var(--shadow-card);
+          border: 1px solid var(--color-border);
+          transition: transform 0.2s, box-shadow 0.2s;
           text-decoration: none;
           color: inherit;
           display: flex;
@@ -367,18 +429,27 @@ const HomePage = () => {
         }
 
         .hall-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+          transform: translateY(-3px);
+          box-shadow: 0 14px 30px rgba(89, 48, 12, 0.12);
         }
 
         .hall-image {
           width: 100%;
-          height: 180px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          height: 170px;
+          background: linear-gradient(135deg, #f7941d 0%, #e86f1b 60%, #b95613 100%);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 80px;
+          font-size: 26px;
+          font-weight: 800;
+          color: white;
+        }
+
+        .hall-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
         }
 
         .hall-info {
@@ -391,79 +462,95 @@ const HomePage = () => {
         .hall-info h3 {
           margin: 0 0 8px 0;
           font-size: 16px;
-          color: #333;
-          font-weight: 600;
+          color: var(--color-text);
+          font-weight: 800;
         }
 
         .description {
           font-size: 13px;
-          color: #666;
+          color: var(--color-muted);
           margin-bottom: 12px;
-          line-height: 1.4;
+          line-height: 1.45;
         }
 
         .details {
           font-size: 12px;
-          color: #888;
+          color: var(--color-muted);
           margin-bottom: 12px;
           display: flex;
           gap: 12px;
+          flex-wrap: wrap;
         }
 
         .footer {
           margin-top: auto;
           padding-top: 12px;
-          border-top: 1px solid #eee;
+          border-top: 1px solid var(--color-border);
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: flex-end;
         }
 
         .price {
-          font-size: 18px;
-          font-weight: 700;
-          color: #667eea;
+          font-size: 17px;
+          font-weight: 800;
+          color: var(--color-primary-hover);
           display: block;
           margin-bottom: 5px;
         }
 
         .rating {
           font-size: 12px;
-          color: #666;
+          color: var(--color-muted);
+        }
+
+        .add-link {
+          color: var(--color-primary);
+          font-weight: 800;
+          font-size: 13px;
         }
 
         .pagination {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: -76px;
           display: flex;
           gap: 10px;
           justify-content: center;
-          margin-top: 30px;
-          padding-bottom: 40px;
+          margin-top: 0;
+          padding-bottom: 0;
+          flex-wrap: wrap;
         }
 
         .page-btn {
           width: 36px;
           height: 36px;
-          border: 1px solid #ddd;
+          border: 1px solid var(--color-border-strong);
           background: white;
-          border-radius: 5px;
+          border-radius: 6px;
           cursor: pointer;
-          font-weight: 500;
-          transition: all 0.3s;
+          font-weight: 700;
         }
 
+        .page-btn.active,
         .page-btn:hover {
-          border-color: #667eea;
-          color: #667eea;
-        }
-
-        .page-btn.active {
-          background: #667eea;
+          background: var(--color-primary);
           color: white;
-          border-color: #667eea;
+          border-color: var(--color-primary);
         }
 
-        .loading, .no-results {
+        .loading,
+        .no-results {
+          background: white;
+          border: 1px solid var(--color-border);
+          border-radius: 8px;
           text-align: center;
-          padding: 60px 20px;
-          color: #888;
+          padding: 48px 20px;
+          color: var(--color-muted);
           font-size: 16px;
+          box-shadow: var(--shadow-card);
         }
 
         @media (max-width: 768px) {
@@ -473,14 +560,19 @@ const HomePage = () => {
 
           .sidebar {
             position: static;
+            max-height: none;
+            overflow: visible;
+            margin-top: 0;
           }
 
-          .halls-grid {
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          .pagination {
+            position: static;
+            margin-top: 30px;
+            padding-bottom: 40px;
           }
 
           .hero-content h1 {
-            font-size: 32px;
+            font-size: 30px;
           }
         }
       `}</style>
