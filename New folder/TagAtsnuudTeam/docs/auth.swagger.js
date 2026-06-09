@@ -88,6 +88,8 @@ const authSwaggerDocs = {
               }
             }
           }
+          
+          
         },
         '409': {
           description: 'Email already registered',
