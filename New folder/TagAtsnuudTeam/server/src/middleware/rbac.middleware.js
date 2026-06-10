@@ -6,7 +6,10 @@ const rbacMiddleware = (allowedRoles = []) => (req, res, next) => {
     });
   }
 
-  if (!allowedRoles.includes(req.user.role)) {
+  const normalizedAllowedRoles = allowedRoles.map((role) => String(role).toUpperCase());
+  const userRole = String(req.user.role || "").toUpperCase();
+
+  if (!normalizedAllowedRoles.includes(userRole)) {
     return res.status(403).json({
       success: false,
       message: `Access denied. Required roles: ${allowedRoles.join(", ")}`,

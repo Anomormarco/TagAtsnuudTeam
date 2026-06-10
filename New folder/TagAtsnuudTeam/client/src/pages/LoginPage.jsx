@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
 import TokenManager from '../utils/tokenManager';
 
-/**
- * Login Page - Day 2 & Day 3 Update
- */
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   React.useEffect(() => {
     if (TokenManager.isAuthenticated()) {
@@ -33,12 +31,11 @@ const LoginPage = () => {
 
       const response = await apiClient.post('/auth/login', {
         email,
-        password
+        password,
       });
 
       TokenManager.setTokens(response.data.data.accessToken);
       TokenManager.setUser(response.data.data.user);
-
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Нэвтрэхэд алдаа гарлаа');
@@ -51,7 +48,8 @@ const LoginPage = () => {
     <div className="login-container">
       <div className="login-box">
         <h1>Нэвтрэх</h1>
-        
+
+        {location.state?.success && <div className="success-message">{location.state.success}</div>}
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
@@ -94,7 +92,8 @@ const LoginPage = () => {
           display: flex;
           justify-content: center;
           align-items: center;
-          height: 100vh;
+          min-height: 100vh;
+          padding: 24px;
           background: linear-gradient(135deg, #f7941d 0%, #e86f1b 55%, #b95613 100%);
         }
 
@@ -122,6 +121,15 @@ const LoginPage = () => {
           border: 1px solid #f5c6cb;
         }
 
+        .success-message {
+          background-color: #e5f6ea;
+          color: #1f6b35;
+          padding: 12px;
+          border-radius: 5px;
+          margin-bottom: 20px;
+          border: 1px solid #b9e7c8;
+        }
+
         .form-group {
           margin-bottom: 20px;
         }
@@ -130,7 +138,7 @@ const LoginPage = () => {
           display: block;
           margin-bottom: 8px;
           color: var(--color-text);
-          font-weight: 500;
+          font-weight: 700;
         }
 
         .form-group input {
@@ -156,7 +164,7 @@ const LoginPage = () => {
           border: none;
           border-radius: 5px;
           font-size: 16px;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
           transition: background-color 0.3s;
         }
@@ -179,7 +187,7 @@ const LoginPage = () => {
         .signup-link a {
           color: var(--color-primary);
           text-decoration: none;
-          font-weight: 600;
+          font-weight: 700;
         }
 
         .signup-link a:hover {

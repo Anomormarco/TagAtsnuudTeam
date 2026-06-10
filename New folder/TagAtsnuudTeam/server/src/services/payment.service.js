@@ -2,8 +2,24 @@ const paymentRepository = require('../repositories/payment.repository');
 const { PAYMENT_METHODS, PAYMENT_STATUSES } = require('../models/payment.model');
 const { PAYOUT_STATUSES } = require('../models/ownerPayout.model');
 const cache = require('../utils/cache');
-const { calculateCommission, money } = require('../utils/commission');
 const createHttpError = require('../utils/httpError');
+
+function money(amount) {
+  return Number(Number(amount || 0).toFixed(2));
+}
+
+function calculateCommission(amount, platformFee) {
+  const normalizedAmount = money(amount);
+  const normalizedPlatformFee = platformFee === undefined || platformFee === null
+    ? money(normalizedAmount * 0.1)
+    : money(platformFee);
+
+  return {
+    amount: normalizedAmount,
+    platformFee: normalizedPlatformFee,
+    ownerAmount: money(normalizedAmount - normalizedPlatformFee)
+  };
+}
 
 const ZERO_DECIMAL_CURRENCIES = new Set([
   'bif',
@@ -47,7 +63,12 @@ function getStripe() {
   }
 
   if (!stripeClient) {
-    const Stripe = require('stripe');
+    let Stripe;
+    try {
+      Stripe = require('stripe');
+    } catch (error) {
+      throw createHttpError(500, 'stripe package is not installed');
+    }
     stripeClient = Stripe(process.env.STRIPE_SECRET_KEY);
   }
 
@@ -73,6 +94,11 @@ function getBaseUrl(payload) {
 async function createPayment(payload) {
   requireFields(payload, ['bookingId', 'userId', 'hallId', 'ownerId', 'amount']);
   ensurePositiveAmount(payload.amount);
+
+  const existingPayment = await paymentRepository.getPaymentByBookingId(payload.bookingId);
+  if (existingPayment) {
+    return existingPayment;
+  }
 
   const commission = calculateCommission(payload.amount, payload.platformFee);
   const method = payload.method || 'stripe';
@@ -103,6 +129,10 @@ async function createPayment(payload) {
     paidAt: payload.paidAt || (status === 'paid' ? new Date() : null)
   });
 
+  if (status === 'paid') {
+    await paymentRepository.updatePaymentStatus(payment.id, 'paid', payload.transactionId || null);
+  }
+
   cache.clearPaymentCache();
   return payment;
 }
@@ -112,13 +142,23 @@ async function createCheckoutSession(payload) {
   ensurePositiveAmount(payload.amount);
 
   const currency = payload.currency || process.env.STRIPE_CURRENCY || 'MNT';
-  const payment = await createPayment({
+  const existingPayment = await paymentRepository.getPaymentByBookingId(payload.bookingId);
+  const payment = existingPayment || await createPayment({
     ...payload,
     currency,
     method: 'stripe',
     status: 'pending'
   });
   const baseUrl = getBaseUrl(payload);
+
+  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'sk_test_your_key_here') {
+    return {
+      checkoutUrl: `${baseUrl}/checkout-success?mock=true&payment_id=${payment.id}`,
+      sessionId: `mock_session_${payment.id}`,
+      payment
+    };
+  }
+
   const stripe = getStripe();
 
   const session = await stripe.checkout.sessions.create({

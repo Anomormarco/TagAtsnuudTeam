@@ -154,6 +154,32 @@ async function getOwnerDashboard(ownerId) {
     [ownerId]
   );
 
+  const [halfMonthRentals] = await pool.execute(
+    `
+      SELECT
+        b.id,
+        b.user_id AS userId,
+        b.hall_id AS hallId,
+        h.name AS hallName,
+        b.start_time AS startTime,
+        b.end_time AS endTime,
+        b.total_price AS totalPrice,
+        LOWER(b.status) AS status,
+        p.owner_amount AS ownerAmount,
+        LOWER(p.payment_status) AS paymentStatus
+      FROM bookings b
+      JOIN halls h ON h.id = b.hall_id
+      LEFT JOIN payments p ON p.booking_id = b.id AND p.deleted_at IS NULL
+      WHERE h.owner_id = ?
+        AND b.deleted_at IS NULL
+        AND b.start_time >= NOW()
+        AND b.start_time < DATE_ADD(NOW(), INTERVAL 14 DAY)
+      ORDER BY b.start_time ASC
+      LIMIT 30
+    `,
+    [ownerId]
+  );
+
   return {
     ownerId: Number(ownerId),
     ...summaryRows[0],
@@ -161,6 +187,7 @@ async function getOwnerDashboard(ownerId) {
     halls,
     payments,
     payouts,
+    halfMonthRentals,
   };
 }
 

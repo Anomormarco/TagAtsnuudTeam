@@ -85,7 +85,7 @@ const baseSelect = `
   LEFT JOIN reviews r ON r.hall_id = h.id AND r.deleted_at IS NULL
 `;
 
-const buildWhere = ({ keyword, category, location } = {}) => {
+const buildWhere = ({ keyword, category, location, ownerId } = {}) => {
   const params = [];
   const where = ["h.deleted_at IS NULL"];
 
@@ -97,6 +97,11 @@ const buildWhere = ({ keyword, category, location } = {}) => {
   if (location) {
     where.push("h.location LIKE ?");
     params.push(`%${location}%`);
+  }
+
+  if (ownerId) {
+    where.push("h.owner_id = ?");
+    params.push(ownerId);
   }
 
   if (category) {

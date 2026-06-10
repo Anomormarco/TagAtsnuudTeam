@@ -52,6 +52,11 @@ async function getPaymentById(id) {
   return rows[0] || null;
 }
 
+async function getPaymentByBookingId(bookingId) {
+  const [rows] = await pool.execute(`${paymentSelect} WHERE p.booking_id = ? AND p.deleted_at IS NULL LIMIT 1`, [bookingId]);
+  return rows[0] || null;
+}
+
 async function getPaymentsByUser(userId) {
   const [rows] = await pool.execute(`${paymentSelect} WHERE p.user_id = ? AND p.deleted_at IS NULL ORDER BY p.created_at DESC`, [userId]);
   return rows;
@@ -63,14 +68,17 @@ async function getPaymentsByOwner(ownerId) {
 }
 
 async function createPayment(payment) {
+  const [maxRows] = await pool.execute("SELECT COALESCE(MAX(id), 0) + 1 AS nextId FROM payments");
+  const nextId = maxRows[0].nextId;
   const commissionRate = payment.commissionRate || 10;
   const platformFee = payment.platformFee ?? payment.commissionAmount ?? Number(payment.amount) * commissionRate / 100;
   const ownerAmount = payment.ownerAmount ?? Number(payment.amount) - Number(platformFee);
   const [result] = await pool.execute(
     `INSERT INTO payments
-      (booking_id, user_id, owner_id, amount, commission_rate, commission_amount, owner_amount, currency, stripe_session_id, stripe_payment_intent_id, payment_status, paid_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, booking_id, user_id, owner_id, amount, commission_rate, commission_amount, owner_amount, currency, stripe_session_id, stripe_payment_intent_id, payment_status, paid_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
+      nextId,
       payment.bookingId,
       payment.userId,
       payment.ownerId,
@@ -85,16 +93,28 @@ async function createPayment(payment) {
       payment.paidAt || toPaidAt(payment.status),
     ]
   );
-  return getPaymentById(result.insertId);
+  return getPaymentById(result.insertId || nextId);
 }
 
 async function updatePaymentStatus(id, status, transactionId = null) {
+  const normalizedStatus = normalizePaymentStatus(status);
   await pool.execute(
     `UPDATE payments
      SET payment_status = ?, stripe_payment_intent_id = COALESCE(?, stripe_payment_intent_id), paid_at = COALESCE(?, paid_at)
      WHERE id = ? AND deleted_at IS NULL`,
-    [normalizePaymentStatus(status), transactionId, toPaidAt(status), id]
+    [normalizedStatus, transactionId, toPaidAt(status), id]
   );
+
+  if (normalizedStatus === "PAID") {
+    await pool.execute(
+      `UPDATE bookings b
+       JOIN payments p ON p.booking_id = b.id
+       SET b.status = 'PAID', b.updated_at = CURRENT_TIMESTAMP
+       WHERE p.id = ? AND b.deleted_at IS NULL`,
+      [id]
+    );
+  }
+
   return getPaymentById(id);
 }
 
@@ -194,6 +214,7 @@ module.exports = {
   getOwnerPayoutById,
   getOwnerPayouts,
   getPaymentById,
+  getPaymentByBookingId,
   getPaymentSummary,
   getPayments,
   getPaymentsByOwner,

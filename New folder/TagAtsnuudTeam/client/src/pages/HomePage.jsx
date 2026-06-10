@@ -140,7 +140,7 @@ const HomePage = () => {
               ))}
             </div>
 
-            <div className="filter-section">
+            <div className="filter-section price-filter">
               <h3>Үнийн дээд хэмжээ</h3>
               <input
                 type="range"
@@ -197,7 +197,7 @@ const HomePage = () => {
                           <span>{hall.capacity} хүн</span>
                           <span>{hall.location}</span>
                         </div>
-                        <div className="footer">
+                        <div className="hall-card-footer">
                           <div>
                             <span className="price">₮{Number(hall.pricePerHour).toLocaleString()}/цаг</span>
                             <div className="rating">
@@ -345,6 +345,27 @@ const HomePage = () => {
           border-bottom: 0;
         }
 
+        .filter-section.price-filter {
+          background: #5b351b;
+          border: 1px solid #7a4a29;
+          border-radius: 8px;
+          padding: 14px;
+          color: #fff7ed;
+        }
+
+        .filter-section.price-filter h3 {
+          color: #fff7ed;
+        }
+
+        .filter-section.price-filter input[type="range"] {
+          width: 100%;
+          accent-color: #f0a64b;
+        }
+
+        .filter-section.price-filter .price-display {
+          color: #ffe6c2;
+        }
+
         .filter-section h3 {
           margin-bottom: 12px;
           color: var(--color-text);
@@ -482,7 +503,7 @@ const HomePage = () => {
           flex-wrap: wrap;
         }
 
-        .footer {
+        .hall-card-footer {
           margin-top: auto;
           padding-top: 12px;
           border-top: 1px solid var(--color-border);
@@ -490,6 +511,8 @@ const HomePage = () => {
           justify-content: space-between;
           gap: 12px;
           align-items: flex-end;
+          background: white;
+          color: var(--color-text);
         }
 
         .price {
@@ -512,14 +535,11 @@ const HomePage = () => {
         }
 
         .pagination {
-          position: absolute;
-          left: 0;
-          right: 0;
-          bottom: -76px;
           display: flex;
           gap: 10px;
           justify-content: center;
-          margin-top: 0;
+          margin-top: 30px;
+          margin-bottom: 44px;
           padding-bottom: 0;
           flex-wrap: wrap;
         }

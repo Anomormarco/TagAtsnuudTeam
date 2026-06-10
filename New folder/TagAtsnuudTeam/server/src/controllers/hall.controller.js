@@ -3,8 +3,8 @@ const hallService = require("../services/hall.service");
 const { sendSuccess } = require("../utils/response");
 
 const getRequestUser = (req) => ({
-  id: req.headers["x-user-id"],
-  role: req.headers["x-user-role"],
+  id: req.user?.userId || req.user?.id,
+  role: req.user?.role,
 });
 
 const getHalls = asyncHandler(async (req, res) => {
@@ -15,6 +15,7 @@ const getHalls = asyncHandler(async (req, res) => {
     page: req.query.page,
     size: req.query.size,
     sort: req.query.sort,
+    ownerId: req.query.ownerId || req.query.owner_id,
   });
   sendSuccess(res, halls, "Заалны жагсаалт амжилттай");
 });

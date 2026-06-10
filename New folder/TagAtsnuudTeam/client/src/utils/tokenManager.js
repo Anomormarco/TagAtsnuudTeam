@@ -4,6 +4,10 @@
  */
 
 const TokenManager = {
+  normalizeRole(role) {
+    return String(role || '').toLowerCase();
+  },
+
   /**
    * Set tokens
    */
@@ -69,7 +73,7 @@ const TokenManager = {
    */
   hasRole(role) {
     const user = this.getUser();
-    return user && user.role === role;
+    return user && this.normalizeRole(user.role) === this.normalizeRole(role);
   },
 
   /**
@@ -77,7 +81,8 @@ const TokenManager = {
    */
   hasAnyRole(roles) {
     const user = this.getUser();
-    return user && roles.includes(user.role);
+    const normalizedRoles = roles.map((role) => this.normalizeRole(role));
+    return user && normalizedRoles.includes(this.normalizeRole(user.role));
   }
 };
 

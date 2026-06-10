@@ -1,29 +1,73 @@
 import React, { useEffect, useState } from 'react';
 import apiClient from '../utils/apiClient';
 
+const emptyOwnerForm = {
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+};
+
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
+  const [owners, setOwners] = useState([]);
+  const [ownerForm, setOwnerForm] = useState(emptyOwnerForm);
+  const [savingOwner, setSavingOwner] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
 
-  const [systemStatus] = useState({
-    database: 'Хэвийн',
-    api: 'Ажиллаж байна',
-    storage: '75%',
-    uptime: '99.8%',
-  });
+  const loadDashboard = async () => {
+    const [dashboardResponse, ownersResponse] = await Promise.all([
+      apiClient.get('/dashboard/admin'),
+      apiClient.get('/auth/owners'),
+    ]);
+    setStats(dashboardResponse.data);
+    setOwners(ownersResponse.data?.data || []);
+  };
 
   useEffect(() => {
-    apiClient.get('/dashboard/admin')
-      .then((response) => setStats(response.data))
-      .catch(() => setStats({
+    loadDashboard().catch(() => {
+      setStats({
         totalUsers: 0,
         totalBookings: 0,
         totalHalls: 0,
         paidRevenue: 0,
         platformRevenue: 0,
-        ownerRevenue: 0,
         recentPayments: [],
-      }));
+        recentPayouts: [],
+      });
+      setOwners([]);
+      setError('Админ самбарын мэдээлэл ачаалахад алдаа гарлаа');
+    });
   }, []);
+
+  const handleOwnerChange = (e) => {
+    const { name, value } = e.target;
+    setOwnerForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const createOwner = async (e) => {
+    e.preventDefault();
+    setError('');
+    setNotice('');
+
+    if (ownerForm.password !== ownerForm.confirmPassword) {
+      setError('Owner-ийн нууц үг таарахгүй байна');
+      return;
+    }
+
+    setSavingOwner(true);
+    try {
+      await apiClient.post('/auth/owners', ownerForm);
+      setOwnerForm(emptyOwnerForm);
+      setNotice('Owner account амжилттай үүслээ');
+      await loadDashboard();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Owner үүсгэхэд алдаа гарлаа');
+    } finally {
+      setSavingOwner(false);
+    }
+  };
 
   if (!stats) {
     return <div className="admin-dashboard"><div className="container">Ачаалж байна...</div></div>;
@@ -32,123 +76,130 @@ const AdminDashboard = () => {
   return (
     <div className="admin-dashboard">
       <div className="container">
-        <h1>Админ самбар</h1>
+        <div className="page-heading">
+          <p className="eyebrow">Админ хэсэг</p>
+          <h1>Системийн удирдлага</h1>
+        </div>
+
+        {(notice || error) && (
+          <div className={error ? 'notice error' : 'notice success'}>
+            {error || notice}
+          </div>
+        )}
 
         <div className="metrics-grid">
           <div className="metric-card">
-            <h4>Нийт хэрэглэгч</h4>
-            <p className="metric-value">{stats.totalUsers}</p>
-            <span className="metric-change">Өнгөрсөн сараас 12% өссөн</span>
+            <span>Нийт хэрэглэгч</span>
+            <strong>{stats.totalUsers || 0}</strong>
           </div>
           <div className="metric-card">
-            <h4>Нийт захиалга</h4>
-            <p className="metric-value">{stats.totalBookings}</p>
-            <span className="metric-change">Өнгөрсөн сараас 8% өссөн</span>
+            <span>Owner</span>
+            <strong>{owners.length}</strong>
           </div>
           <div className="metric-card">
-            <h4>Нийт орлого</h4>
-            <p className="metric-value">₮{(Number(stats.paidRevenue) / 1000000).toFixed(1)} сая</p>
-            <span className="metric-change">Өнгөрсөн сараас 15% өссөн</span>
+            <span>Нийт заал</span>
+            <strong>{stats.totalHalls || 0}</strong>
           </div>
           <div className="metric-card">
-            <h4>Платформ шимтгэл</h4>
-            <p className="metric-value">₮{(Number(stats.platformRevenue) / 1000000).toFixed(1)} сая</p>
-            <span className="metric-change">10% шимтгэл</span>
+            <span>Нийт захиалга</span>
+            <strong>{stats.totalBookings || 0}</strong>
           </div>
           <div className="metric-card">
-            <h4>Идэвхтэй заал</h4>
-            <p className="metric-value">{stats.totalHalls}</p>
-            <span className="metric-change">Энэ сард 5 заал нэмэгдсэн</span>
+            <span>Төлөгдсөн орлого</span>
+            <strong>₮{Number(stats.paidRevenue || 0).toLocaleString()}</strong>
           </div>
           <div className="metric-card">
-            <h4>Заал эзэмшигч</h4>
-            <p className="metric-value">{stats.recentPayouts?.length || 0}</p>
-            <span className="metric-change">Энэ сард 3 эзэмшигч нэмэгдсэн</span>
+            <span>Платформ шимтгэл</span>
+            <strong>₮{Number(stats.platformRevenue || 0).toLocaleString()}</strong>
           </div>
         </div>
 
-        <section className="panel">
-          <h2>Системийн төлөв</h2>
-          <div className="status-grid">
-            {Object.entries(systemStatus).map(([key, value]) => (
-              <div key={key} className="status-item">
-                <span className="status-label">{key}</span>
-                <span className="status-value">{value}</span>
-                <span className="status-indicator ok" />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <div className="section-row">
+        <div className="admin-grid">
           <section className="panel">
-            <h2>Сүүлийн захиалгууд</h2>
-            <div className="activity-list">
-              {(stats.recentPayments || []).map((payment) => (
-                <div key={payment.id} className="activity-item">
-                  <div className="activity-content">
-                    <p><strong>Захиалга #{String(payment.bookingId).padStart(4, '0')}</strong></p>
-                    <p className="activity-meta">{payment.hallName || 'Заал'} · ₮{Number(payment.amount).toLocaleString()} · {payment.status}</p>
+            <div className="section-header">
+              <h2>Owner нэмэх</h2>
+              <span>Admin эрхээр үүсгэнэ</span>
+            </div>
+
+            <form className="owner-form" onSubmit={createOwner}>
+              <label>
+                Нэр
+                <input name="name" value={ownerForm.name} onChange={handleOwnerChange} required />
+              </label>
+              <label>
+                Имэйл
+                <input type="email" name="email" value={ownerForm.email} onChange={handleOwnerChange} required />
+              </label>
+              <div className="form-row">
+                <label>
+                  Нууц үг
+                  <input type="password" name="password" minLength="6" value={ownerForm.password} onChange={handleOwnerChange} required />
+                </label>
+                <label>
+                  Давтах
+                  <input type="password" name="confirmPassword" minLength="6" value={ownerForm.confirmPassword} onChange={handleOwnerChange} required />
+                </label>
+              </div>
+              <button type="submit" disabled={savingOwner}>
+                {savingOwner ? 'Үүсгэж байна...' : 'Owner үүсгэх'}
+              </button>
+            </form>
+          </section>
+
+          <section className="panel">
+            <div className="section-header">
+              <h2>Owner жагсаалт</h2>
+              <span>{owners.length} owner</span>
+            </div>
+
+            <div className="owner-list">
+              {owners.length ? owners.map((owner) => (
+                <div className="owner-row" key={owner.id}>
+                  <div>
+                    <strong>{owner.name}</strong>
+                    <p>{owner.email}</p>
                   </div>
-                  <span className="activity-time">{new Date(payment.createdAt).toLocaleDateString()}</span>
+                  <span>{owner.role}</span>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="panel">
-            <h2>Орлогын задаргаа</h2>
-            <div className="revenue-chart">
-              <div className="chart-item">
-                <div className="chart-bar">
-                  <div className="bar-segment" style={{ width: '70%', backgroundColor: 'var(--color-primary)' }} />
-                </div>
-                <span className="chart-label">Заалын захиалга: ₮{Number(stats.paidRevenue).toLocaleString()}</span>
-              </div>
-              <div className="chart-item">
-                <div className="chart-bar">
-                  <div className="bar-segment" style={{ width: '10%', backgroundColor: 'var(--color-success)' }} />
-                </div>
-                <span className="chart-label">Платформ шимтгэл: ₮{Number(stats.platformRevenue).toLocaleString()}</span>
-              </div>
+              )) : (
+                <div className="empty-state">Owner account одоогоор алга.</div>
+              )}
             </div>
           </section>
         </div>
 
         <section className="panel">
-          <h2>Сүүлийн шилжүүлгүүд</h2>
-          <div className="verification-table">
+          <div className="section-header">
+            <h2>Сүүлийн төлбөрүүд</h2>
+          </div>
+
+          <div className="payments-table">
             <table>
               <thead>
                 <tr>
-                  <th>Эзэмшигч</th>
-                  <th>Төлбөр</th>
+                  <th>Захиалга</th>
+                  <th>Заал</th>
                   <th>Дүн</th>
                   <th>Төлөв</th>
                   <th>Огноо</th>
                 </tr>
               </thead>
               <tbody>
-                {(stats.recentPayouts || []).map((payout) => (
-                  <tr key={payout.id}>
-                    <td>Эзэмшигч #{payout.ownerId}</td>
-                    <td>Төлбөр #{payout.paymentId}</td>
-                    <td>₮{Number(payout.amount).toLocaleString()}</td>
-                    <td><span className="badge pending">{payout.status}</span></td>
-                    <td>{new Date(payout.createdAt).toLocaleDateString()}</td>
+                {(stats.recentPayments || []).length ? stats.recentPayments.map((payment) => (
+                  <tr key={payment.id}>
+                    <td>#{payment.bookingId}</td>
+                    <td>{payment.hallName || 'Заал'}</td>
+                    <td>₮{Number(payment.amount || 0).toLocaleString()}</td>
+                    <td><span className="badge">{payment.status}</span></td>
+                    <td>{new Date(payment.createdAt).toLocaleDateString('mn-MN')}</td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan="5" className="empty-cell">Төлбөрийн мэдээлэл алга.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
-          </div>
-        </section>
-
-        <section className="panel">
-          <h2>Удирдлагын хэрэгслүүд</h2>
-          <div className="tools-grid">
-            {['Хэрэглэгч', 'Заал', 'Захиалга', 'Тайлан', 'Санхүү', 'Тохиргоо'].map((item) => (
-              <button key={item} className="tool-btn">{item}</button>
-            ))}
           </div>
         </section>
       </div>
@@ -166,25 +217,59 @@ const AdminDashboard = () => {
           padding: 0 20px;
         }
 
-        .admin-dashboard h1 {
-          font-size: 28px;
+        .page-heading {
+          margin-bottom: 22px;
+        }
+
+        .eyebrow {
+          margin: 0 0 6px;
+          color: var(--color-primary-hover);
+          font-weight: 800;
+          font-size: 13px;
+        }
+
+        h1, h2, p {
+          margin-top: 0;
+        }
+
+        h1 {
           color: var(--color-text);
-          margin-bottom: 24px;
+          font-size: 30px;
+          margin-bottom: 0;
+        }
+
+        .notice {
+          padding: 12px 14px;
+          border-radius: 8px;
+          margin-bottom: 18px;
+          font-weight: 700;
+        }
+
+        .notice.error {
+          background: #f8d7da;
+          color: #721c24;
+          border: 1px solid #f5c6cb;
+        }
+
+        .notice.success {
+          background: #e5f6ea;
+          color: #1f6b35;
+          border: 1px solid #b9e7c8;
         }
 
         .metrics-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 18px;
-          margin-bottom: 24px;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 14px;
+          margin-bottom: 22px;
         }
 
         .metric-card,
         .panel {
           background: white;
+          border: 1px solid var(--color-border);
           border-radius: 8px;
           box-shadow: var(--shadow-card);
-          border: 1px solid var(--color-border);
         }
 
         .metric-card {
@@ -192,203 +277,186 @@ const AdminDashboard = () => {
           border-top: 4px solid var(--color-primary);
         }
 
-        .metric-card h4 {
-          margin: 0 0 10px 0;
+        .metric-card span {
+          display: block;
           color: var(--color-muted);
           font-size: 12px;
           font-weight: 800;
-        }
-
-        .metric-value {
-          margin: 0 0 8px 0;
-          font-size: 27px;
-          font-weight: 800;
-          color: var(--color-text);
-        }
-
-        .metric-change {
-          font-size: 12px;
-          color: var(--color-success);
-        }
-
-        .panel {
-          padding: 24px;
-          margin-bottom: 24px;
-        }
-
-        .panel h2 {
-          margin: 0 0 18px 0;
-          font-size: 20px;
-          color: var(--color-text);
-        }
-
-        .status-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-          gap: 14px;
-        }
-
-        .status-item {
-          background: var(--color-surface-warm);
-          padding: 14px;
-          border-radius: 8px;
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .status-label {
-          font-size: 12px;
-          color: var(--color-muted);
-          font-weight: 800;
-        }
-
-        .status-value {
-          font-size: 17px;
-          font-weight: 800;
-          color: var(--color-text);
-        }
-
-        .status-indicator {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          background: var(--color-success);
-          position: absolute;
-          top: 12px;
-          right: 12px;
-        }
-
-        .section-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 24px;
-        }
-
-        .activity-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .activity-item {
-          display: flex;
-          gap: 12px;
-          padding: 12px;
-          background: var(--color-surface-warm);
-          border-radius: 8px;
-          align-items: center;
-        }
-
-        .activity-content {
-          flex: 1;
-        }
-
-        .activity-content p {
-          margin: 0;
-        }
-
-        .activity-meta,
-        .activity-time,
-        .chart-label {
-          font-size: 12px;
-          color: var(--color-muted);
-        }
-
-        .revenue-chart {
-          display: flex;
-          flex-direction: column;
-          gap: 15px;
-        }
-
-        .chart-bar {
-          height: 30px;
-          background: var(--color-primary-soft);
-          border-radius: 6px;
-          overflow: hidden;
           margin-bottom: 8px;
         }
 
-        .bar-segment {
-          height: 100%;
+        .metric-card strong {
+          display: block;
+          color: var(--color-text);
+          font-size: 22px;
         }
 
-        .verification-table {
+        .admin-grid {
+          display: grid;
+          grid-template-columns: 0.9fr 1.1fr;
+          gap: 22px;
+          margin-bottom: 22px;
+          align-items: start;
+        }
+
+        .panel {
+          padding: 22px;
+        }
+
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .section-header h2 {
+          margin: 0;
+          color: var(--color-text);
+          font-size: 20px;
+        }
+
+        .section-header span {
+          color: var(--color-primary-hover);
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        .owner-form {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .owner-form label {
+          color: var(--color-text);
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        .owner-form input {
+          width: 100%;
+          margin-top: 7px;
+          padding: 11px;
+          border: 1px solid var(--color-border-strong);
+          border-radius: 6px;
+          font: inherit;
+        }
+
+        .owner-form input:focus {
+          outline: none;
+          border-color: var(--color-primary);
+          box-shadow: 0 0 0 3px rgba(232, 111, 27, 0.14);
+        }
+
+        .form-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+
+        .owner-form button {
+          border: none;
+          border-radius: 6px;
+          background: var(--color-primary);
+          color: white;
+          padding: 12px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .owner-form button:hover {
+          background: var(--color-primary-hover);
+        }
+
+        .owner-form button:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+        }
+
+        .owner-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .owner-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: center;
+          padding: 13px;
+          border: 1px solid var(--color-border);
+          border-radius: 8px;
+          background: var(--color-surface);
+        }
+
+        .owner-row strong {
+          color: var(--color-text);
+        }
+
+        .owner-row p {
+          margin: 5px 0 0;
+          color: var(--color-muted);
+          font-size: 13px;
+        }
+
+        .owner-row span,
+        .badge {
+          background: var(--color-primary-soft);
+          color: var(--color-primary-hover);
+          border-radius: 999px;
+          padding: 5px 9px;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .payments-table {
           overflow-x: auto;
         }
 
-        .verification-table table {
+        table {
           width: 100%;
           border-collapse: collapse;
         }
 
-        .verification-table th {
+        th,
+        td {
+          padding: 13px;
           text-align: left;
-          padding: 12px;
-          background: var(--color-primary-soft);
-          border-bottom: 2px solid var(--color-border);
-          font-weight: 800;
-          color: var(--color-muted);
-          font-size: 12px;
-        }
-
-        .verification-table td {
-          padding: 12px;
           border-bottom: 1px solid var(--color-border);
         }
 
-        .badge {
-          padding: 6px 12px;
-          border-radius: 20px;
+        th {
+          background: var(--color-primary-soft);
+          color: var(--color-muted);
           font-size: 12px;
           font-weight: 800;
-          color: #8a5a00;
-          background: #fff2bd;
         }
 
-        .btn-small {
-          padding: 7px 12px;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 12px;
-          margin-right: 5px;
-          font-weight: 800;
-        }
-
-        .btn-small.approve {
-          background: var(--color-success);
-          color: white;
-        }
-
-        .btn-small.reject {
-          background: var(--color-danger);
-          color: white;
-        }
-
-        .tools-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 14px;
-        }
-
-        .tool-btn {
-          background: var(--color-primary);
-          color: white;
-          border: none;
-          padding: 18px;
+        .empty-state,
+        .empty-cell {
+          padding: 24px;
+          text-align: center;
+          color: var(--color-muted);
+          background: var(--color-surface-warm);
           border-radius: 8px;
-          cursor: pointer;
-          font-weight: 800;
         }
 
-        .tool-btn:hover {
-          background: var(--color-primary-hover);
+        @media (max-width: 1000px) {
+          .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .admin-grid {
+            grid-template-columns: 1fr;
+          }
         }
 
-        @media (max-width: 768px) {
-          .section-row {
+        @media (max-width: 520px) {
+          .metrics-grid,
+          .form-row {
             grid-template-columns: 1fr;
           }
         }

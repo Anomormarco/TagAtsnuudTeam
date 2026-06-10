@@ -67,16 +67,32 @@ const verifyFallbackToken = (token, secret) => {
 };
 
 class AuthService {
-  generateAccessToken(userId) {
-    const payload = { userId, type: "access" };
+  normalizeTokenUser(user) {
+    if (typeof user === "object" && user !== null) {
+      return {
+        userId: user.id || user.userId,
+        role: String(user.role || "USER").toUpperCase(),
+      };
+    }
+
+    return {
+      userId: user,
+      role: "USER",
+    };
+  }
+
+  generateAccessToken(user) {
+    const tokenUser = this.normalizeTokenUser(user);
+    const payload = { userId: tokenUser.userId, role: tokenUser.role, type: "access" };
     const secret = process.env.JWT_SECRET || "your-secret-key";
     const expiresIn = process.env.JWT_EXPIRY || "1h";
 
     return jwt ? jwt.sign(payload, secret, { expiresIn }) : signFallbackToken(payload, secret, expiresIn);
   }
 
-  generateRefreshToken(userId) {
-    const payload = { userId, type: "refresh" };
+  generateRefreshToken(user) {
+    const tokenUser = this.normalizeTokenUser(user);
+    const payload = { userId: tokenUser.userId, role: tokenUser.role, type: "refresh" };
     const secret = process.env.REFRESH_TOKEN_SECRET || "refresh-secret-key";
     const expiresIn = process.env.REFRESH_TOKEN_EXPIRY || "7d";
 
@@ -115,10 +131,10 @@ class AuthService {
     }
   }
 
-  generateTokenPair(userId) {
+  generateTokenPair(user) {
     return {
-      accessToken: this.generateAccessToken(userId),
-      refreshToken: this.generateRefreshToken(userId),
+      accessToken: this.generateAccessToken(user),
+      refreshToken: this.generateRefreshToken(user),
     };
   }
 

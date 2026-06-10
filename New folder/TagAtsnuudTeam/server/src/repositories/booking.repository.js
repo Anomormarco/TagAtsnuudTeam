@@ -47,11 +47,14 @@ const hasOverlappingBooking = async ({ hall_id, start_time, end_time, ignoreBook
 };
 
 const createBooking = async ({ user_id, hall_id, start_time, end_time, total_price }) => {
+  const [maxRows] = await pool.execute("SELECT COALESCE(MAX(id), 0) + 1 AS nextId FROM bookings");
+  const nextId = maxRows[0].nextId;
+
   const [result] = await pool.execute(
-    "INSERT INTO bookings (user_id, hall_id, start_time, end_time, total_price, status) VALUES (?, ?, ?, ?, ?, 'PENDING')",
-    [user_id, hall_id, start_time, end_time, total_price]
+    "INSERT INTO bookings (id, user_id, hall_id, start_time, end_time, total_price, status) VALUES (?, ?, ?, ?, ?, ?, 'PENDING')",
+    [nextId, user_id, hall_id, start_time, end_time, total_price]
   );
-  return getBookingById(result.insertId);
+  return getBookingById(result.insertId || nextId);
 };
 
 const updateBooking = async (id, fields) => {

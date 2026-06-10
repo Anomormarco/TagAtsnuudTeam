@@ -49,9 +49,10 @@ const ProfilePage = () => {
 
   const handleRoleRedirect = () => {
     const user = TokenManager.getUser();
-    if (user?.role === 'admin') {
+    const role = TokenManager.normalizeRole(user?.role);
+    if (role === 'admin') {
       navigate('/admin/dashboard');
-    } else if (user?.role === 'owner') {
+    } else if (role === 'owner') {
       navigate('/owner/dashboard');
     } else {
       navigate('/bookings');
@@ -111,9 +112,9 @@ const ProfilePage = () => {
             </div>
 
             <div className="profile-actions">
-              {user.role !== 'user' && (
+              {TokenManager.normalizeRole(user.role) !== 'user' && (
                 <button className="dashboard-btn" onClick={handleRoleRedirect}>
-                  {user.role === 'admin' ? 'Админ' : 'Эзэмшигчийн'} самбар руу очих
+                  {TokenManager.normalizeRole(user.role) === 'admin' ? 'Админ' : 'Эзэмшигчийн'} самбар руу очих
                 </button>
               )}
               <button className="edit-btn">Профайл засах</button>

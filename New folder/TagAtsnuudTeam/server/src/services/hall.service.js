@@ -9,6 +9,7 @@ const normalizeFilters = (filters = {}) => ({
   page: Number(filters.page) || 1,
   size: Number(filters.size) || 12,
   sort: filters.sort || "created_at,desc",
+  ownerId: filters.ownerId || "",
 });
 
 const getHalls = async (filters = {}) => {
@@ -55,6 +56,10 @@ const createHall = async (hallData, user = {}) => {
 
   if (!ownerId) {
     throw new ApiError(400, "ownerId шаардлагатай");
+  }
+
+  if (user.role !== "ADMIN" && Number(ownerId) !== Number(user.id)) {
+    throw new ApiError(403, "Зөвхөн өөрийн нэр дээр заал нэмэх эрхтэй");
   }
 
   const hall = await hallRepository.create({ ...hallData, ownerId });

@@ -6,8 +6,10 @@ const Header = ({ user, setUser }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const currentUser = user || TokenManager.getUser();
+  const userRole = TokenManager.normalizeRole(currentUser?.role);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     TokenManager.clearTokens();
     setUser(null);
     navigate('/login');
@@ -21,12 +23,13 @@ const Header = ({ user, setUser }) => {
   };
 
   const handleDashboardClick = () => {
-    const userInfo = TokenManager.getUser();
-    if (userInfo?.role === 'admin') {
+    const role = TokenManager.normalizeRole(TokenManager.getUser()?.role);
+    if (role === 'admin') {
       navigate('/admin/dashboard');
-    } else if (userInfo?.role === 'owner') {
+    } else if (role === 'owner') {
       navigate('/owner/dashboard');
     }
+    setShowMenu(false);
   };
 
   return (
@@ -51,17 +54,24 @@ const Header = ({ user, setUser }) => {
 
         <nav className="nav-links">
           <Link to="/" className="nav-link">Заалууд</Link>
-          {user ? (
+          {currentUser ? (
             <>
               <Link to="/bookings" className="nav-link">Миний захиалга</Link>
+              {(userRole === 'owner' || userRole === 'admin') && (
+                <button className="nav-link nav-button" onClick={handleDashboardClick}>
+                  Самбар
+                </button>
+              )}
               <div className="user-menu">
                 <button className="user-button" onClick={() => setShowMenu(!showMenu)}>
-                  {user.name}
+                  {currentUser.name}
                 </button>
                 {showMenu && (
                   <div className="dropdown-menu">
-                    <Link to="/profile" className="menu-item">Профайл</Link>
-                    {(user.role === 'owner' || user.role === 'admin') && (
+                    <Link to="/profile" className="menu-item" onClick={() => setShowMenu(false)}>
+                      Профайл
+                    </Link>
+                    {(userRole === 'owner' || userRole === 'admin') && (
                       <button className="menu-item" onClick={handleDashboardClick}>
                         Самбар
                       </button>
@@ -180,7 +190,8 @@ const Header = ({ user, setUser }) => {
           flex-wrap: wrap;
         }
 
-        .nav-link {
+        .nav-link,
+        .nav-button {
           color: var(--color-text);
           text-decoration: none;
           font-weight: 600;
@@ -189,7 +200,16 @@ const Header = ({ user, setUser }) => {
           transition: background 0.2s, color 0.2s;
         }
 
-        .nav-link:hover {
+        .nav-button {
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 14px;
+        }
+
+        .nav-link:hover,
+        .nav-button:hover {
           background: var(--color-primary-soft);
           color: var(--color-primary-hover);
         }
@@ -244,6 +264,7 @@ const Header = ({ user, setUser }) => {
           color: var(--color-text);
           text-decoration: none;
           font-size: 14px;
+          font-family: inherit;
         }
 
         .menu-item:hover {

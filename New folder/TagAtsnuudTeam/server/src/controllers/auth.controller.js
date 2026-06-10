@@ -38,10 +38,23 @@ const validateRegisterBody = ({ name, email, password, confirmPassword }) => {
   authService.validatePassword(password);
 };
 
+const normalizeRole = (role) => {
+  const normalizedRole = String(role || "USER").toUpperCase();
+  return ["USER", "OWNER", "ADMIN"].includes(normalizedRole) ? normalizedRole : "USER";
+};
+
 const register = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
   validateRegisterBody(req.body);
+
+  const adminCount = await userRepository.countByRole("ADMIN");
+  const requestedRole = normalizeRole(role);
+  let userRole = adminCount === 0 ? "ADMIN" : "USER";
+
+  if (adminCount > 0 && requestedRole === "ADMIN") {
+    throw new ApiError(403, "Admin бүртгэл аль хэдийн үүссэн байна");
+  }
 
   const existingUser = await userRepository.findByEmail(email);
   if (existingUser) {
@@ -53,9 +66,9 @@ const register = asyncHandler(async (req, res) => {
     name,
     email,
     password: hashedPassword,
-    role: "user",
+    role: userRole,
   });
-  const tokens = authService.generateTokenPair(user.id);
+  const tokens = authService.generateTokenPair(user);
 
   await userRepository.updateRefreshToken(user.id, tokens.refreshToken);
   res.cookie("refreshToken", tokens.refreshToken, cookieOptions);
@@ -69,6 +82,37 @@ const register = asyncHandler(async (req, res) => {
     "User registered successfully",
     201
   );
+});
+
+const getAdminExists = asyncHandler(async (req, res) => {
+  const adminCount = await userRepository.countByRole("ADMIN");
+  sendSuccess(res, { exists: adminCount > 0 }, "Admin төлөв");
+});
+
+const createOwner = asyncHandler(async (req, res) => {
+  const { name, email, password, confirmPassword } = req.body;
+
+  validateRegisterBody({ name, email, password, confirmPassword });
+
+  const existingUser = await userRepository.findByEmail(email);
+  if (existingUser) {
+    throw new ApiError(409, "Email already registered");
+  }
+
+  const hashedPassword = await passwordUtil.hash(password);
+  const owner = await userRepository.create({
+    name,
+    email,
+    password: hashedPassword,
+    role: "OWNER",
+  });
+
+  sendSuccess(res, formatUser(owner), "Owner амжилттай үүслээ", 201);
+});
+
+const getOwners = asyncHandler(async (req, res) => {
+  const owners = await userRepository.listByRole("OWNER");
+  sendSuccess(res, owners.map(formatUser), "Owner жагсаалт");
 });
 
 const login = asyncHandler(async (req, res) => {
@@ -88,7 +132,7 @@ const login = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  const tokens = authService.generateTokenPair(user.id);
+  const tokens = authService.generateTokenPair(user);
   await userRepository.updateRefreshToken(user.id, tokens.refreshToken);
   res.cookie("refreshToken", tokens.refreshToken, cookieOptions);
 
@@ -122,7 +166,12 @@ const refreshToken = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid refresh token");
   }
 
-  const tokens = authService.generateTokenPair(decoded.userId);
+  const user = await userRepository.findById(decoded.userId);
+  if (!user || !user.isActive) {
+    throw new ApiError(401, "User not found or inactive");
+  }
+
+  const tokens = authService.generateTokenPair(user);
   await userRepository.updateRefreshToken(decoded.userId, tokens.refreshToken);
   res.cookie("refreshToken", tokens.refreshToken, cookieOptions);
 
@@ -140,4 +189,7 @@ module.exports = {
   logout,
   refreshToken,
   getMe,
+  getAdminExists,
+  createOwner,
+  getOwners,
 };

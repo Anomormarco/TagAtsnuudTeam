@@ -12,8 +12,20 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
+
+
+
     const token = authHeader.slice(7);
     const decoded = authService.verifyAccessToken(token);
+    const tokenRole = String(decoded.role || "").toUpperCase();
+
+    if (!tokenRole) {
+      return res.status(401).json({
+        success: false,
+        message: "Role not found in token. Please login again.",
+      });
+    }
+
     const user = await userRepository.findById(decoded.userId);
 
     if (!user || !user.isActive) {
@@ -23,9 +35,17 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
+    if (String(user.role || "").toUpperCase() !== tokenRole) {
+      return res.status(401).json({
+        success: false,
+        message: "Token role is no longer valid. Please login again.",
+      });
+    }
+
     req.user = {
       userId: decoded.userId,
-      role: user.role,
+      id: decoded.userId,
+      role: tokenRole,
       email: user.email,
     };
 
@@ -39,3 +59,4 @@ const authMiddleware = async (req, res, next) => {
 };
 
 module.exports = authMiddleware;
+

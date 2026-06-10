@@ -24,8 +24,10 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   if (requiredRole) {
     try {
       const user = JSON.parse(userStr);
-      if (!requiredRole.includes(user.role)) {
-        return <Navigate to="/unauthorized" replace />;
+      const allowedRoles = requiredRole.map((role) => String(role).toLowerCase());
+      const userRole = String(user.role || '').toLowerCase();
+      if (!allowedRoles.includes(userRole)) {
+        return <Navigate to="/" replace />;
       }
     } catch (error) {
       localStorage.removeItem('accessToken');

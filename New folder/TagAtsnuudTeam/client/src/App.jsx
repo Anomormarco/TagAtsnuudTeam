@@ -11,6 +11,8 @@ import HomePage from './pages/HomePage';
 import HallDetailPage from './pages/HallDetailPage';
 import BookingPage from './pages/BookingPage';
 import MyBookingsPage from './pages/MyBookingsPage';
+import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
+import CheckoutCancelPage from './pages/CheckoutCancelPage';
 import AdminDashboard from './pages/AdminDashboard';
 import OwnerDashboard from './pages/OwnerDashboard';
 import NotFoundPage from './pages/NotFoundPage';
@@ -49,6 +51,8 @@ function App() {
             <Route path="/halls/:id" element={<HallDetailPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/checkout-success" element={<CheckoutSuccessPage />} />
+            <Route path="/checkout-cancel" element={<CheckoutCancelPage />} />
 
             {/* Protected Routes - User */}
             <Route
